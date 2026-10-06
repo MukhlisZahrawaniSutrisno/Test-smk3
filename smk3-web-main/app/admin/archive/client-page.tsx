@@ -1,0 +1,614 @@
+'use client'
+
+import { useState, useEffect, ChangeEvent, FormEvent } from "react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { createDocumentArchive, updateDocumentArchive, deleteDocumentArchive } from "@/app/actions/documentArchive"
+import {
+  Plus, Trash2, Edit, FileText, Image as ImageIcon, Download, Search, Filter,
+  X, Eye, Calendar, FolderArchive, ArrowLeft, Loader2, CheckCircle2, AlertCircle, RefreshCcw, FilePenLine
+} from "lucide-react"
+import toast from "react-hot-toast"
+
+type DocumentItem = {
+  id: string
+  documentNumber: string | null
+  title: string
+  documentType: string
+  documentDate: Date
+  division: string
+  digitalStatus: string
+  filePath: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+const DOCUMENT_TYPES = [
+  "Nota Dinas",
+  "Surat Masuk",
+  "Surat Keluar",
+  "Berita Acara",
+  "BAST",
+  "Dokumen SMK3",
+  "Audit",
+  "Dokumen Aset",
+  "Memo",
+  "Lainnya"
+]
+
+export default function ArchiveClientPage({
+  initialDocuments,
+  userRole
+}: {
+  initialDocuments: DocumentItem[]
+  userRole?: string
+}) {
+  const router = useRouter()
+  const [documents, setDocuments] = useState<DocumentItem[]>(initialDocuments)
+  const [search, setSearch] = useState("")
+  const [filterType, setFilterType] = useState("")
+  const [filterYear, setFilterYear] = useState("")
+
+  const [loading, setLoading] = useState(false)
+  const [showFormModal, setShowFormModal] = useState(false)
+  const [editDoc, setEditDoc] = useState<DocumentItem | null>(null)
+  const [detailDoc, setDetailDoc] = useState<DocumentItem | null>(null)
+
+  const [selectedFileName, setSelectedFileName] = useState<string | null>(null)
+
+  const isAdmin = userRole === "ADMIN"
+  // Pegawai is now allowed to add/edit archives too!
+  const isPegawai = userRole === "PEGAWAI"
+  const canModify = isAdmin || isPegawai
+
+  // Filter logic
+  const filteredDocuments = documents.filter(doc => {
+    const docDate = new Date(doc.documentDate)
+    const docYear = docDate.getFullYear().toString()
+
+    const matchesSearch =
+      (doc.documentNumber || "").toLowerCase().includes(search.toLowerCase()) ||
+      doc.title.toLowerCase().includes(search.toLowerCase()) ||
+      doc.documentType.toLowerCase().includes(search.toLowerCase())
+
+    const matchesType = filterType ? doc.documentType === filterType : true
+    const matchesYear = filterYear ? docYear === filterYear : true
+
+    return matchesSearch && matchesType && matchesYear
+  })
+
+  // Sync state when props change
+  useEffect(() => {
+    setDocuments(initialDocuments)
+  }, [initialDocuments])
+
+  // Extract unique years for filter
+  const uniqueYears = Array.from(new Set(documents.map(doc => {
+    return new Date(doc.documentDate).getFullYear().toString()
+  }))).sort((a, b) => b.localeCompare(a))
+
+  const handleDelete = async (id: string) => {
+    // Only Admin can delete documents
+    if (!isAdmin) {
+      toast.error("Hanya Admin yang dapat menghapus dokumen!")
+      return
+    }
+    if (confirm("Apakah Anda yakin ingin menghapus dokumen ini? File scan fisik juga akan dihapus.")) {
+      setLoading(true)
+      try {
+        const res = await deleteDocumentArchive(id)
+        if (res.success) {
+          toast.success(res.message || "Dokumen berhasil dihapus")
+          setDocuments(prev => prev.filter(d => d.id !== id))
+          if (detailDoc?.id === id) setDetailDoc(null)
+          router.refresh()
+        } else {
+          toast.error(res.message || "Gagal menghapus dokumen")
+        }
+      } catch (err: any) {
+        toast.error(err?.message || "Gagal menghapus dokumen")
+      } finally {
+        setLoading(false)
+      }
+    }
+  }
+
+  const handleOpenAdd = () => {
+    setEditDoc(null)
+    setSelectedFileName(null)
+    setShowFormModal(true)
+  }
+
+  const handleOpenEdit = (doc: DocumentItem) => {
+    setEditDoc(doc)
+    setSelectedFileName(doc.filePath ? doc.filePath.split('/').pop() || null : null)
+    setShowFormModal(true)
+  }
+
+  const handleFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setLoading(true)
+    const formData = new FormData(e.currentTarget)
+    if (editDoc) {
+      formData.append('id', editDoc.id)
+    }
+
+    try {
+      const response = await fetch('/api/archive', {
+        method: editDoc ? 'PUT' : 'POST',
+        body: formData
+      })
+
+      const res = await response.json()
+
+      if (res.success && res.data) {
+        toast.success(res.message || "Berhasil menyimpan dokumen")
+        const returnedDoc = res.data as DocumentItem
+        if (editDoc) {
+          setDocuments(prev => prev.map(d => d.id === editDoc.id ? returnedDoc : d))
+          if (detailDoc?.id === editDoc.id) {
+            setDetailDoc(returnedDoc)
+          }
+        } else {
+          setDocuments(prev => [returnedDoc, ...prev])
+        }
+        setShowFormModal(false)
+        setEditDoc(null)
+        setSelectedFileName(null)
+        router.refresh()
+      } else {
+        toast.error(res.message || "Gagal menyimpan dokumen")
+      }
+    } catch (err: any) {
+      console.error(err)
+      toast.error(err?.message || "Terjadi kesalahan saat memproses data")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedFileName(file.name)
+    } else {
+      setSelectedFileName(null)
+    }
+  }
+
+  const resetFilters = () => {
+    setSearch("")
+    setFilterType("")
+    setFilterYear("")
+  }
+
+  return (
+    <div className="space-y-8 font-sans">
+      {/* HEADER SECTION */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+        <div>
+          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-3">
+            <span className="bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 p-2 rounded-xl">
+              <FolderArchive size={32} />
+            </span>
+            Arsip Dokumen
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 font-medium mt-1 ml-16">
+            Digitalisasi, pencarian, dan monitoring arsip dokumen fisik departemen.
+          </p>
+        </div>
+        {canModify && (
+          <button
+            onClick={handleOpenAdd}
+            className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-red-200 dark:shadow-none transition-all active:scale-95 w-full sm:w-auto justify-center shrink-0"
+          >
+            <Plus size={20} />
+            Tambah Dokumen
+          </button>
+        )}
+      </div>
+
+      {/* FILTER & SEARCH PANEL */}
+      <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <h3 className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2 text-sm uppercase tracking-wider">
+            <Filter size={16} /> Filter & Pencarian
+          </h3>
+          {(search || filterType || filterYear) && (
+            <button
+              onClick={resetFilters}
+              className="text-xs text-red-600 dark:text-red-400 hover:text-red-700 font-bold flex items-center gap-1 transition"
+            >
+              <RefreshCcw size={12} /> Reset Filter
+            </button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="md:col-span-2 relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input
+              type="text"
+              placeholder="Cari berdasarkan Nomor, Judul, atau Jenis..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-red-500 transition text-sm font-medium text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
+            />
+          </div>
+
+          <div>
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-red-500 transition text-sm font-medium text-slate-800 dark:text-slate-100"
+            >
+              <option value="">Semua Jenis Dokumen</option>
+              {DOCUMENT_TYPES.map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <select
+              value={filterYear}
+              onChange={(e) => setFilterYear(e.target.value)}
+              className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-red-500 transition text-sm font-medium text-slate-800 dark:text-slate-100"
+            >
+              <option value="">Semua Tahun Dokumen</option>
+              {uniqueYears.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* DATA TABLE */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+        {filteredDocuments.length === 0 ? (
+          <div className="text-center py-20 bg-slate-50/50 dark:bg-slate-800/50">
+            <FolderArchive className="mx-auto text-slate-300 dark:text-slate-600 mb-3" size={48} />
+            <p className="text-slate-800 dark:text-slate-100 font-bold text-lg">Dokumen Tidak Ditemukan</p>
+            <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm mx-auto mt-1">Coba sesuaikan kata kunci pencarian atau filter yang Anda terapkan.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 text-[11px] font-bold uppercase tracking-wider">
+                <tr>
+                  <th className="px-6 py-4">Nomor Dokumen</th>
+                  <th className="px-6 py-4">Judul Dokumen</th>
+                  <th className="px-6 py-4">Jenis</th>
+                  <th className="px-6 py-4">Tanggal</th>
+                  <th className="px-6 py-4">Divisi</th>
+                  <th className="px-6 py-4">Scan</th>
+                  <th className="px-6 py-4 text-center">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                {filteredDocuments.map((doc) => {
+                  const dateStr = new Date(doc.documentDate).toLocaleDateString('id-ID', {
+                    day: 'numeric', month: 'short', year: 'numeric'
+                  })
+
+                  return (
+                    <tr key={doc.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition">
+                      <td className="px-6 py-4 font-bold text-slate-800 dark:text-slate-100">{doc.documentNumber || "-"}</td>
+                      <td className="px-6 py-4 font-semibold text-slate-700 dark:text-slate-200 max-w-xs truncate">{doc.title}</td>
+                      <td className="px-6 py-4">{doc.documentType}</td>
+                      <td className="px-6 py-4 font-medium text-slate-500 dark:text-slate-400">{dateStr}</td>
+                      <td className="px-6 py-4 text-xs font-semibold text-slate-600 dark:text-slate-400">{doc.division}</td>
+                      <td className="px-6 py-4">
+                        {doc.filePath ? (
+                          <span className="text-red-600 dark:text-red-400 hover:text-red-700 font-bold inline-flex items-center gap-1 text-xs">
+                            <FileText size={14} /> Tersedia
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 dark:text-slate-500 inline-flex items-center gap-1 text-xs">
+                            Tidak Ada
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => setDetailDoc(doc)}
+                            title="Lihat Detail & Preview"
+                            className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-600 dark:hover:text-red-400 rounded-lg text-slate-500 dark:text-slate-400 hover:border-red-100 transition-colors shadow-sm"
+                          >
+                            <Eye size={15} />
+                          </button>
+
+                          {canModify && (
+                            <button
+                              onClick={() => handleOpenEdit(doc)}
+                              title="Edit Dokumen"
+                              className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-amber-50 dark:hover:bg-amber-950/40 hover:text-amber-600 dark:hover:text-amber-400 rounded-lg text-slate-500 dark:text-slate-400 hover:border-amber-100 transition-colors shadow-sm"
+                            >
+                              <Edit size={15} />
+                            </button>
+                          )}
+
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleDelete(doc.id)}
+                              title="Hapus Dokumen"
+                              className="p-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-600 dark:hover:text-red-400 rounded-lg text-slate-500 dark:text-slate-400 hover:border-red-100 transition-colors shadow-sm"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* FORM MODAL (ADD & EDIT) */}
+      {showFormModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200 max-h-[90vh] overflow-y-auto custom-scrollbar border border-slate-100 dark:border-slate-800">
+            <button
+              onClick={() => setShowFormModal(false)}
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              <X size={20} />
+            </button>
+
+            <h2 className="text-xl font-bold mb-6 text-slate-800 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-4 flex items-center gap-2">
+              <FolderArchive className="text-red-600 dark:text-red-400" size={24} />
+              {editDoc ? "Edit Dokumen Arsip" : "Tambah Dokumen Baru"}
+            </h2>
+
+            <form onSubmit={handleFormSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="archive-doc-number" className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1.5 block tracking-wider">Nomor Dokumen</label>
+                <input
+                  id="archive-doc-number"
+                  name="documentNumber"
+                  defaultValue={editDoc?.documentNumber || ""}
+                  placeholder="Contoh: ND.102/LOG-R3/2026 "
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all font-semibold"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="archive-title" className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1.5 block tracking-wider">Judul Dokumen</label>
+                <input
+                  id="archive-title"
+                  name="title"
+                  defaultValue={editDoc?.title || ""}
+                  required
+                  placeholder="Contoh: Pengadaan Kursi Kerja Ergonomis"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-red-500 focus:ring-4 focus:ring-red-500/10 transition-all font-semibold"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="archive-type" className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1.5 block tracking-wider">Jenis Dokumen</label>
+                  <select
+                    id="archive-type"
+                    name="documentType"
+                    defaultValue={editDoc?.documentType || "Nota Dinas"}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-red-500 transition-all font-semibold"
+                  >
+                    {DOCUMENT_TYPES.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="archive-date" className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1.5 block tracking-wider">Tanggal Dokumen</label>
+                  <input
+                    id="archive-date"
+                    name="documentDate"
+                    type="date"
+                    required
+                    defaultValue={editDoc ? new Date(editDoc.documentDate).toISOString().split('T')[0] : ""}
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-red-500 transition-all font-semibold"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="archive-division" className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1.5 block tracking-wider">Divisi</label>
+                <input
+                  id="archive-division"
+                  name="division"
+                  required
+                  defaultValue={editDoc?.division || "General Support"}
+                  placeholder="General Support"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm text-slate-800 dark:text-slate-100 outline-none focus:bg-white dark:focus:bg-slate-900 focus:border-red-500 transition-all font-semibold"
+                />
+                <input type="hidden" name="digitalStatus" value={editDoc?.digitalStatus || "Sudah Digital"} />
+              </div>
+
+              <div>
+                <label htmlFor="archive-file-input" className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1.5 block tracking-wider">Upload Scan Dokumen (PDF, JPG, PNG)</label>
+                <div className="relative border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-4 bg-slate-50 dark:bg-slate-800 text-center hover:bg-slate-100/50 dark:hover:bg-slate-800/80 transition cursor-pointer group">
+                  <input
+                    id="archive-file-input"
+                    name="file"
+                    type="file"
+                    accept="application/pdf,image/jpeg,image/png"
+                    onChange={handleFileChange}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                  <div className="flex flex-col items-center justify-center space-y-1">
+                    <ImageIcon className="text-slate-400 group-hover:text-red-500 transition" size={28} />
+                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                      {selectedFileName ? selectedFileName : "Klik atau seret file ke sini"}
+                    </span>
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500">PDF, JPG, atau PNG (Maks 10MB)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowFormModal(false)}
+                  className="px-5 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-md shadow-red-100 dark:shadow-none hover:shadow-lg transition flex items-center gap-2 active:scale-95 disabled:opacity-55"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="animate-spin" size={18} /> Menyimpan...
+                    </>
+                  ) : (
+                    "Simpan Dokumen"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DETAIL MODAL WITH PREVIEW */}
+      {detailDoc && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-4xl p-6 shadow-2xl relative animate-in fade-in zoom-in duration-200 h-[90vh] overflow-hidden border border-slate-100 dark:border-slate-800 flex flex-col">
+            <button
+              onClick={() => setDetailDoc(null)}
+              className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors z-10"
+            >
+              <X size={20} />
+            </button>
+
+            <h2 className="text-xl font-bold mb-6 text-slate-800 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-4 flex items-center gap-2 shrink-0">
+              <FolderArchive className="text-red-600 dark:text-red-400" size={24} />
+              Detail Dokumen Arsip
+            </h2>
+
+            <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0 overflow-y-auto lg:overflow-hidden pb-4">
+              {/* Left Column: Metadata */}
+              <div className="w-full lg:w-80 space-y-4 shrink-0 lg:overflow-y-auto pr-2 custom-scrollbar">
+                <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl space-y-3.5 border border-slate-200/50 dark:border-slate-700/50">
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-400 tracking-wider">Nomor Dokumen</span>
+                    <p className="font-bold text-slate-800 dark:text-slate-100 text-sm mt-0.5">{detailDoc.documentNumber || "-"}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-400 tracking-wider">Judul Dokumen</span>
+                    <p className="font-bold text-slate-800 dark:text-slate-100 text-sm mt-0.5 leading-snug">{detailDoc.title}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-400 tracking-wider">Jenis Dokumen</span>
+                    <p className="font-semibold text-slate-700 dark:text-slate-200 text-sm mt-0.5">{detailDoc.documentType}</p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-400 tracking-wider">Tanggal Dokumen</span>
+                    <p className="font-semibold text-slate-700 dark:text-slate-200 text-sm mt-0.5 flex items-center gap-1">
+                      <Calendar size={14} className="text-slate-400" />
+                      {new Date(detailDoc.documentDate).toLocaleDateString('id-ID', {
+                        day: 'numeric', month: 'long', year: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-400 tracking-wider">Divisi Pemilik</span>
+                    <p className="font-semibold text-slate-700 dark:text-slate-200 text-sm mt-0.5">{detailDoc.division}</p>
+                  </div>
+                </div>
+
+                {detailDoc.filePath ? (
+                  <div className="space-y-2.5 pt-2">
+                    {/* Tombol Buka di Document Tools K3 (Khusus PDF) */}
+                    {canModify && detailDoc.filePath.toLowerCase().endsWith('.pdf') && (
+                      <Link
+                        href={`${isAdmin ? '/admin' : '/pegawai'}/document-tools?file=${encodeURIComponent(detailDoc.filePath)}&name=${encodeURIComponent(detailDoc.title)}&archiveId=${encodeURIComponent(detailDoc.id)}`}
+                        className="flex items-center justify-center gap-2 w-full bg-slate-900 dark:bg-red-600 hover:bg-slate-800 dark:hover:bg-red-700 text-white text-sm font-bold py-3 rounded-xl transition-all shadow-md shadow-slate-900/10 active:scale-95 group"
+                      >
+                        <FilePenLine size={16} className="text-red-400 dark:text-white group-hover:rotate-12 transition-transform" />
+                        Edit di Document Tools K3
+                      </Link>
+                    )}
+
+                    <a
+                      href={detailDoc.filePath}
+                      download
+                      className="flex items-center justify-center gap-2 w-full bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 text-sm font-bold py-3 rounded-xl border border-red-200 dark:border-red-900/50 transition-colors shadow-sm"
+                    >
+                      <Download size={16} /> Download File Scan
+                    </a>
+                  </div>
+                ) : (
+                  canModify && (
+                    <div className="pt-2">
+                      <button
+                        onClick={() => {
+                          const docToEdit = detailDoc
+                          setDetailDoc(null)
+                          handleOpenEdit(docToEdit)
+                        }}
+                        className="flex items-center justify-center gap-2 w-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2.5 rounded-xl transition shadow"
+                      >
+                        <Plus size={14} /> Upload File Scan Sekarang
+                      </button>
+                    </div>
+                  )
+                )}
+              </div>
+
+              {/* Right Column: File Preview */}
+              <div className="flex-1 flex flex-col bg-slate-100 dark:bg-slate-800 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 min-h-[300px] lg:min-h-0">
+                {detailDoc.filePath ? (
+                  detailDoc.filePath.toLowerCase().endsWith('.pdf') ? (
+                    <iframe
+                      key={detailDoc.id + (detailDoc.filePath || '') + new Date(detailDoc.updatedAt).getTime()}
+                      src={`${detailDoc.filePath}?v=${new Date(detailDoc.updatedAt).getTime()}#toolbar=0`}
+                      className="w-full h-full border-none"
+                      title="PDF Preview"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center p-4 overflow-auto">
+                      <img
+                        key={detailDoc.filePath + new Date(detailDoc.updatedAt).getTime()}
+                        src={`${detailDoc.filePath}?v=${new Date(detailDoc.updatedAt).getTime()}`}
+                        alt="Scan Preview"
+                        className="max-w-full max-h-full object-contain rounded shadow"
+                      />
+                    </div>
+                  )
+                ) : (
+                  <div className="flex-grow flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 p-6 bg-slate-50/50 dark:bg-slate-900/50">
+                    <FileText size={48} className="text-slate-300 dark:text-slate-600 mb-2" />
+                    <p className="font-bold text-slate-700 dark:text-slate-200">Belum Ada File Scan</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-400 mt-1 max-w-xs text-center">Dokumen fisik ini belum melewati proses scanning atau upload file.</p>
+                    {canModify && (
+                      <button
+                        onClick={() => {
+                          const docToEdit = detailDoc
+                          setDetailDoc(null)
+                          handleOpenEdit(docToEdit)
+                        }}
+                        className="mt-4 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-1.5"
+                      >
+                        <Plus size={14} /> Upload Scan Sekarang
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
