@@ -2,6 +2,7 @@
 node_modules/
 .next/
 *.tsbuildinfo
+.artifacts/
 
 # Local secrets; only templates belong in Git
 .env
