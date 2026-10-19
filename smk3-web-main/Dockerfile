@@ -56,5 +56,5 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Jalankan migrasi & sinkronisasi skema sebelum start server
-CMD ["/bin/sh", "-c", "(npx prisma migrate deploy || npx prisma db push --accept-data-loss) && (node prisma/seed.js || true) && node server.js"]
+# Jika migrasi gagal, hentikan startup agar data tidak ditimpa oleh db push.
+CMD ["/bin/sh", "-c", "npx prisma migrate deploy && (node prisma/seed.js || true) && node server.js"]

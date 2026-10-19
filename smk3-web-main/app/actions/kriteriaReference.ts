@@ -5,6 +5,7 @@ import { KRITERIA_SMK3_DATA, KriteriaItem } from '@/app/utils/kriteriaReferenceD
 import { revalidatePath } from 'next/cache'
 import { writeFile, mkdir, unlink } from 'fs/promises'
 import path from 'path'
+import type { KriteriaReferenceDoc } from '@prisma/client'
 
 export interface KriteriaWithDoc extends KriteriaItem {
   dbId?: string
@@ -19,12 +20,12 @@ export interface KriteriaWithDoc extends KriteriaItem {
 
 export async function getKriteriaWithDocuments(): Promise<KriteriaWithDoc[]> {
   try {
-    let dbDocs: any[] = []
+    let dbDocs: KriteriaReferenceDoc[] = []
     try {
-      dbDocs = await (prisma as any).kriteriaReferenceDoc.findMany()
-    } catch (e) {
+      dbDocs = await prisma.kriteriaReferenceDoc.findMany()
+    } catch {
       try {
-        await (prisma as any).$executeRawUnsafe(`
+        await prisma.$executeRawUnsafe(`
           CREATE TABLE IF NOT EXISTS "KriteriaReferenceDoc" (
             "id" TEXT NOT NULL PRIMARY KEY,
             "kriteriaNo" TEXT NOT NULL UNIQUE,
@@ -39,13 +40,13 @@ export async function getKriteriaWithDocuments(): Promise<KriteriaWithDoc[]> {
           );
           CREATE UNIQUE INDEX IF NOT EXISTS "KriteriaReferenceDoc_kriteriaNo_key" ON "KriteriaReferenceDoc"("kriteriaNo");
         `)
-        dbDocs = await (prisma as any).kriteriaReferenceDoc.findMany()
+        dbDocs = await prisma.kriteriaReferenceDoc.findMany()
       } catch (err2) {
         console.warn('kriteriaReferenceDoc table create/read warning:', err2)
       }
     }
 
-    const docMap = new Map<string, any>()
+    const docMap = new Map<string, KriteriaReferenceDoc>()
     dbDocs.forEach((doc) => {
       docMap.set(doc.kriteriaNo, doc)
     })
@@ -107,12 +108,12 @@ export async function saveKriteriaDocument(formData: FormData) {
       fileName = file.name
     }
 
-    const existing = await (prisma as any).kriteriaReferenceDoc.findUnique({
+    const existing = await prisma.kriteriaReferenceDoc.findUnique({
       where: { kriteriaNo },
     })
 
     if (existing) {
-      await (prisma as any).kriteriaReferenceDoc.update({
+      await prisma.kriteriaReferenceDoc.update({
         where: { kriteriaNo },
         data: {
           docNumber,
@@ -124,7 +125,7 @@ export async function saveKriteriaDocument(formData: FormData) {
         },
       })
     } else {
-      await (prisma as any).kriteriaReferenceDoc.create({
+      await prisma.kriteriaReferenceDoc.create({
         data: {
           kriteriaNo,
           docNumber,
@@ -140,15 +141,15 @@ export async function saveKriteriaDocument(formData: FormData) {
     revalidatePath('/admin/kriteria-referensi')
     revalidatePath('/pegawai/kriteria-referensi')
     return { success: true }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error saving kriteria doc:', error)
-    return { success: false, error: error.message || 'Gagal menyimpan dokumen referensi' }
+    return { success: false, error: (error instanceof Error ? error.message : 'Gagal menyimpan dokumen referensi') }
   }
 }
 
 export async function deleteKriteriaDocFile(kriteriaNo: string) {
   try {
-    const record = await (prisma as any).kriteriaReferenceDoc.findUnique({
+    const record = await prisma.kriteriaReferenceDoc.findUnique({
       where: { kriteriaNo },
     })
 
@@ -160,7 +161,7 @@ export async function deleteKriteriaDocFile(kriteriaNo: string) {
         console.warn('File might already be deleted on disk:', e)
       }
 
-      await (prisma as any).kriteriaReferenceDoc.update({
+      await prisma.kriteriaReferenceDoc.update({
         where: { kriteriaNo },
         data: {
           filePath: null,
@@ -172,8 +173,8 @@ export async function deleteKriteriaDocFile(kriteriaNo: string) {
     revalidatePath('/admin/kriteria-referensi')
     revalidatePath('/pegawai/kriteria-referensi')
     return { success: true }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error deleting kriteria doc file:', error)
-    return { success: false, error: error.message }
+    return { success: false, error: error instanceof Error ? error.message : 'Gagal menghapus dokumen referensi' }
   }
 }

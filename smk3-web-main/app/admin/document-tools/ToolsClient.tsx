@@ -11,6 +11,18 @@ import {
 } from "lucide-react"
 import toast from "react-hot-toast"
 
+type PdfJsLibrary = {
+  GlobalWorkerOptions: { workerSrc: string };
+  getDocument: (url: string) => { promise: Promise<{
+    numPages: number;
+    getPage: (page: number) => Promise<{
+      getViewport: (options: { scale: number }) => { width: number; height: number };
+      render: (options: { canvasContext: CanvasRenderingContext2D; viewport: { width: number; height: number } }) => { promise: Promise<void> };
+    }>;
+  }> };
+};
+type PdfJsWindow = Window & { 'pdfjs-dist/build/pdf'?: PdfJsLibrary };
+
 type TabType = 'rotate' | 'merge' | 'split' | 'compress'
 
 interface FileItem {
@@ -50,7 +62,7 @@ export default function ToolsClient() {
     script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
     script.async = true
     script.onload = () => {
-      const pdfjsLib = (window as any)['pdfjs-dist/build/pdf']
+      const pdfjsLib = (window as PdfJsWindow)['pdfjs-dist/build/pdf']
       if (pdfjsLib) {
         pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"
       }
@@ -108,7 +120,7 @@ export default function ToolsClient() {
       setThumbnails({})
 
       setTimeout(async () => {
-        const pdfjsLib = (window as any)['pdfjs-dist/build/pdf']
+        const pdfjsLib = (window as PdfJsWindow)['pdfjs-dist/build/pdf']
         if (pdfjsLib) {
           try {
             const fileUrl = URL.createObjectURL(file)
@@ -253,9 +265,9 @@ export default function ToolsClient() {
       } else {
         toast.error(res.message || "Gagal menyimpan ke arsip")
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      toast.error(err?.message || "Terjadi kesalahan saat menyimpan ke arsip")
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan saat menyimpan ke arsip")
     } finally {
       setSavingToArchive(false)
     }
@@ -304,7 +316,7 @@ export default function ToolsClient() {
       setLoading(true)
       const pdfBytes = await generateRotatedPdfBytes()
       if (!pdfBytes) return
-      const blob = new Blob([pdfBytes as any], { type: "application/pdf" })
+      const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" })
       const link = document.createElement("a")
       link.href = URL.createObjectURL(blob)
       link.download = `rotated_${rotateFile.name}`
@@ -324,7 +336,7 @@ export default function ToolsClient() {
       setLoading(true)
       const pdfBytes = await generateRotatedPdfBytes()
       if (!pdfBytes) return
-      const blob = new Blob([pdfBytes as any], { type: "application/pdf" })
+      const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" })
       await handleSaveDirectToArchive(blob, rotateFile.name)
     } catch (err) {
       console.error(err)
@@ -408,7 +420,7 @@ export default function ToolsClient() {
       setLoading(true)
       const pdfBytes = await generateMergedPdfBytes()
       if (!pdfBytes) return
-      const blob = new Blob([pdfBytes as any], { type: "application/pdf" })
+      const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" })
       const link = document.createElement("a")
       link.href = URL.createObjectURL(blob)
       link.download = `merged_${Date.now()}.pdf`
@@ -427,7 +439,7 @@ export default function ToolsClient() {
       setLoading(true)
       const pdfBytes = await generateMergedPdfBytes()
       if (!pdfBytes) return
-      const blob = new Blob([pdfBytes as any], { type: "application/pdf" })
+      const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" })
       await handleSaveDirectToArchive(blob, fileNameParam || "merged_document.pdf")
     } catch (err) {
       console.error(err)
@@ -512,14 +524,14 @@ export default function ToolsClient() {
       setLoading(true)
       const pdfBytes = await generateSplitPdfBytes()
       if (!pdfBytes) return
-      const blob = new Blob([pdfBytes as any], { type: "application/pdf" })
+      const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" })
       const link = document.createElement("a")
       link.href = URL.createObjectURL(blob)
       link.download = `split_${splitRange}_${splitFile.name}`
       link.click()
       toast.success("Halaman PDF berhasil dipisahkan!")
-    } catch (err: any) {
-      toast.error(err?.message || "Gagal memisahkan PDF.")
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal memisahkan PDF.")
     } finally {
       setLoading(false)
     }
@@ -531,10 +543,10 @@ export default function ToolsClient() {
       setLoading(true)
       const pdfBytes = await generateSplitPdfBytes()
       if (!pdfBytes) return
-      const blob = new Blob([pdfBytes as any], { type: "application/pdf" })
+      const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" })
       await handleSaveDirectToArchive(blob, splitFile.name)
-    } catch (err: any) {
-      toast.error(err?.message || "Gagal memisahkan dan menyimpan ke arsip.")
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Gagal memisahkan dan menyimpan ke arsip.")
     } finally {
       setLoading(false)
     }
@@ -566,7 +578,7 @@ export default function ToolsClient() {
       useObjectStreams: true
     })
 
-    const blob = new Blob([compressedBytes as any], { type: "application/pdf" })
+    const blob = new Blob([new Uint8Array(compressedBytes)], { type: "application/pdf" })
     setCompressedSize(formatBytes(blob.size))
     return blob
   }

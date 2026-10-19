@@ -26,8 +26,8 @@ export default function LoginForm() {
         setErrorMessage(res.message || "Email atau password salah!")
         setLoading(false)
       }
-    } catch (err: any) {
-      setErrorMessage(err?.message || "Terjadi kesalahan saat login")
+    } catch (err: unknown) {
+      setErrorMessage(err instanceof Error && err.message ? err.message : "Terjadi kesalahan saat login")
       setLoading(false)
     }
   }

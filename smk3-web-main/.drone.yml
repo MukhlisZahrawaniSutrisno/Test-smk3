@@ -43,14 +43,12 @@ steps:
       - mkdir -p public/uploads
       - chmod -R 777 public/uploads
 
-      # 4. Buat file .env (Pengganti Infisical)
-      # Menggunakan 'host.docker.internal' agar jalan di Docker
-      # Pertahankan konfigurasi SMTP, WA dan CRON_SECRET saat deploy berikutnya.
+      # 4. Konfigurasi deployment dibuat di server, tidak disimpan dalam Git.
+      # Pertahankan database, SMTP, WA dan CRON_SECRET saat deploy berikutnya.
       - |
         if [ ! -f .env ]; then
-          echo "DATABASE_URL=postgresql://magang:6wx3pVKuM39AwAE2H1ObKeP8@host.docker.internal:5432/smk3_db?schema=public" > .env
-          echo "NEXTAUTH_URL=http://localhost:3000" >> .env
-          echo "NEXTAUTH_SECRET=rahasia-random-string-ganti-aja" >> .env
+          echo "Buat /root/smk3-monitoring/.env dari .env.example sebelum deploy."
+          exit 1
         fi
 
       # 5. Eksekusi Docker (Sesuai referensi Anda)

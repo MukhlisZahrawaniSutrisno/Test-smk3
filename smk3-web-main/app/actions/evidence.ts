@@ -10,7 +10,7 @@ import { cookies } from 'next/headers'
 // 1. Ambil data evidence terunggah berdasarkan Area & Periode
 export async function getEvidenceRecords(area: string, periode: number) {
   try {
-    const records = await (prisma as any).evidenceSmk3.findMany({
+    const records = await prisma.evidenceSmk3.findMany({
       where: {
         area: area,
         periode: periode,
@@ -61,7 +61,7 @@ export async function uploadEvidence(formData: FormData) {
     const fileUrl = `/uploads/evidence/${savedFileName}`
 
     // Upsert ke database EvidenceSmk3
-    const record = await (prisma as any).evidenceSmk3.upsert({
+    const record = await prisma.evidenceSmk3.upsert({
       where: {
         itemCode_area_periode: {
           itemCode,
@@ -91,16 +91,16 @@ export async function uploadEvidence(formData: FormData) {
     revalidatePath('/pegawai/evidence')
 
     return { success: true, message: 'Evidence berhasil diunggah', data: record }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error uploadEvidence:', error)
-    return { success: false, message: error.message || 'Gagal mengunggah berkas' }
+    return { success: false, message: (error instanceof Error ? error.message : 'Gagal mengunggah berkas') }
   }
 }
 
 // 3. Hapus berkas evidence
 export async function deleteEvidence(itemCode: string, area: string, periode: number) {
   try {
-    const existing = await (prisma as any).evidenceSmk3.findUnique({
+    const existing = await prisma.evidenceSmk3.findUnique({
       where: {
         itemCode_area_periode: {
           itemCode,
@@ -118,7 +118,7 @@ export async function deleteEvidence(itemCode: string, area: string, periode: nu
         }
       }
 
-      await (prisma as any).evidenceSmk3.delete({
+      await prisma.evidenceSmk3.delete({
         where: { id: existing.id },
       })
     }
@@ -127,8 +127,8 @@ export async function deleteEvidence(itemCode: string, area: string, periode: nu
     revalidatePath('/pegawai/evidence')
 
     return { success: true, message: 'Evidence berhasil dihapus' }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error deleteEvidence:', error)
-    return { success: false, message: error.message || 'Gagal menghapus berkas' }
+    return { success: false, message: (error instanceof Error ? error.message : 'Gagal menghapus berkas') }
   }
 }

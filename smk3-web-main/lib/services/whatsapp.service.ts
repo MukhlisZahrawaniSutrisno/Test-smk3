@@ -30,8 +30,12 @@ export interface WhatsAppSendResult {
   success: boolean;
   provider: WhatsAppProvider;
   messageId?: string;
-  rawResponse?: any;
+  rawResponse?: unknown;
   error?: string;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**
@@ -159,7 +163,7 @@ export class WhatsAppService {
 
     // 4. Susun Headers dan Body sesuai Gateway
     let headers: Record<string, string> = {};
-    let body: Record<string, any> = {};
+    let body: Record<string, unknown> = {};
 
     switch (config.provider) {
       case "FONNTE":
@@ -222,41 +226,34 @@ export class WhatsAppService {
           signal: controller.signal,
         });
 
-        let responseData: any;
+        let responseData: unknown;
+        const responseText = await response.text();
         try {
-          responseData = await response.json();
+          responseData = JSON.parse(responseText);
         } catch {
-          responseData = { rawText: await response.text().catch(() => "") };
+          responseData = { rawText: responseText };
         }
+        const fields = isRecord(responseData) ? responseData : {};
 
         // Tangani respons sukses HTTP
         if (response.ok) {
-          // Beberapa gateway mengembalikan HTTP 200 tetapi JSON berisi error (misal token kadaluwarsa)
-          if (
-            responseData.status === false ||
-            responseData.status === "failed" ||
-            responseData.status === "error"
-          ) {
-            lastError =
-              responseData.reason ||
-              responseData.message ||
-              responseData.detail ||
-              "Gateway merespons penolakan pesan.";
-          } else {
-            // BERHASIL TERKIRIM
-            const messageId =
-              responseData.id ||
-              responseData.message_id ||
-              responseData.messages?.[0]?.id ||
-              `msg_${Date.now()}`;
+          const firstMessage = Array.isArray(fields.messages) ? fields.messages[0] : undefined;
+          const metaMessageId = isRecord(firstMessage) ? firstMessage.id : undefined;
+          const accepted = config.provider === "META"
+            ? typeof metaMessageId === "string" && metaMessageId.length > 0 && !fields.error
+            : (fields.status ?? fields.Status) === true;
+          if (accepted) {
+            const messageId = fields.id || fields.message_id || metaMessageId;
 
             return {
               success: true,
               provider: config.provider,
-              messageId: String(messageId),
+              messageId: messageId == null ? undefined : String(messageId),
               rawResponse: responseData,
             };
           }
+          const reason = fields.reason || fields.message || fields.detail;
+          lastError = typeof reason === "string" && reason ? reason : "Gateway tidak mengonfirmasi pengiriman pesan.";
         } else {
           lastError = `HTTP ${response.status}: ${JSON.stringify(responseData)}`;
 
@@ -275,11 +272,11 @@ export class WhatsAppService {
             };
           }
         }
-      } catch (err: any) {
-        if (err.name === "AbortError") {
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") {
           lastError = "Koneksi gateway timeout (melebihi batas aman 15 detik).";
         } else {
-          lastError = err.message || "Gagal menghubungi server gateway.";
+          lastError = err instanceof Error ? err.message : "Gagal menghubungi server gateway.";
         }
       } finally {
         // Membersihkan timer agar tidak terjadi resource/memory leak di event loop

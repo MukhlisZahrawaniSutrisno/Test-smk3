@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 // app/admin/kecelakaan/page.tsx
 import { PrismaClient } from '@prisma/client'
 import { Ambulance, Calendar, MapPin, User, FileWarning, CheckCircle } from 'lucide-react'
@@ -24,7 +25,7 @@ export default async function KecelakaanPage({
   const statusFilter = typeof unresolvedParams.status === 'string' ? unresolvedParams.status : 'ALL';
 
   // Menyusun kondisi "where" berdarkan pencarian dan filter
-  let whereCondition: any = {};
+  const whereCondition: Prisma.LaporanKecelakaanWhereInput = {};
 
   if (statusFilter !== 'ALL') {
     if (statusFilter === 'OPEN') {

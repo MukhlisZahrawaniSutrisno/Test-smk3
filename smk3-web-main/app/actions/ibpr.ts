@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { writeFile, mkdir } from "fs/promises"
 import { join } from "path"
+import type { Prisma } from "@prisma/client"
 
 export async function createIbpr(formData: FormData) {
     try {
@@ -70,7 +71,7 @@ export async function updateIbpr(id: string, formData: FormData) {
         const foto = formData.get('foto') as File
         const dokumen = formData.get('dokumen') as File
 
-        const updateData: any = {
+        const updateData: Prisma.IbprUpdateInput = {
             lokasi,
             aktivitas,
             bahaya,
@@ -117,7 +118,7 @@ export async function deleteIbpr(id: string) {
         })
         revalidatePath('/admin/ibpr')
         return { success: true, message: "Data IBPR berhasil dihapus" }
-    } catch (error) {
+    } catch {
         return { success: false, message: "Gagal menghapus data" }
     }
 }

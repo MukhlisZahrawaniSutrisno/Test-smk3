@@ -105,8 +105,8 @@ export default function ArchiveClientPage({
         } else {
           toast.error(res.message || "Gagal menghapus dokumen")
         }
-      } catch (err: any) {
-        toast.error(err?.message || "Gagal menghapus dokumen")
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "Gagal menghapus dokumen")
       } finally {
         setLoading(false)
       }
@@ -159,9 +159,9 @@ export default function ArchiveClientPage({
       } else {
         toast.error(res.message || "Gagal menyimpan dokumen")
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      toast.error(err?.message || "Terjadi kesalahan saat memproses data")
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan saat memproses data")
     } finally {
       setLoading(false)
     }

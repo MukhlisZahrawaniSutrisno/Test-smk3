@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ShieldCheck, Moon, Sun, Menu, X, ArrowRight, AlertOctagon } from 'lucide-react'
+import useDarkTheme from '@/app/utils/useDarkTheme'
 
 interface LandingNavbarProps {
   userRole?: string | null;
@@ -10,15 +11,11 @@ interface LandingNavbarProps {
 }
 
 export default function LandingNavbar({ userRole, userName }: LandingNavbarProps) {
-  const [mounted, setMounted] = useState(false)
-  const [isDark, setIsDark] = useState(false)
+  const isDark = useDarkTheme()
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
-    setIsDark(document.documentElement.classList.contains('dark'))
-
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20)
     }
@@ -30,11 +27,9 @@ export default function LandingNavbar({ userRole, userName }: LandingNavbarProps
     if (document.documentElement.classList.contains('dark')) {
       document.documentElement.classList.remove('dark')
       localStorage.theme = 'light'
-      setIsDark(false)
     } else {
       document.documentElement.classList.add('dark')
       localStorage.theme = 'dark'
-      setIsDark(true)
     }
   }
 
@@ -110,10 +105,10 @@ export default function LandingNavbar({ userRole, userName }: LandingNavbarProps
           <button
             onClick={toggleTheme}
             className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
-            title={mounted && isDark ? 'Mode Terang' : 'Mode Gelap'}
+            title={isDark ? 'Mode Terang' : 'Mode Gelap'}
             aria-label="Toggle Theme"
           >
-            {mounted && isDark ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} />}
+            {isDark ? <Sun size={17} className="text-amber-400" /> : <Moon size={17} />}
           </button>
 
           {/* DASHBOARD / LOGIN CTA */}

@@ -7,6 +7,7 @@ import { logout } from "@/app/actions/auth"
 import toast from 'react-hot-toast'
 import TimestampModal from "@/app/components/TimestampModal"
 import AparNotificationBadge from "@/app/components/AparNotificationBadge"
+import useDarkTheme from "@/app/utils/useDarkTheme"
 
 interface AdminHeaderProps {
   userName: string;
@@ -24,7 +25,6 @@ export default function AdminHeader({
   userRole,
   openAuditsCount,
   incidentsCount,
-  isCollapsed,
   setIsCollapsed,
   isMobileOpen,
   setIsMobileOpen
@@ -38,28 +38,20 @@ export default function AdminHeader({
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfileMenu, setShowProfileMenu] = useState(false)
   const [isTimestampOpen, setIsTimestampOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
-  const [isDark, setIsDark] = useState(false)
+  const isDark = useDarkTheme()
   
   const dropdownRef = useRef<HTMLDivElement>(null)
   const notifRef = useRef<HTMLDivElement>(null)
   const profileRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    setMounted(true)
-    setIsDark(document.documentElement.classList.contains('dark'))
-  }, [])
-
   const toggleTheme = () => {
     if (document.documentElement.classList.contains('dark')) {
       document.documentElement.classList.remove('dark')
       localStorage.theme = 'light'
-      setIsDark(false)
       toast.success("Tema Terang Diaktifkan")
     } else {
       document.documentElement.classList.add('dark')
       localStorage.theme = 'dark'
-      setIsDark(true)
       toast.success("Tema Gelap Diaktifkan")
     }
   }
@@ -201,10 +193,10 @@ export default function AdminHeader({
         <button 
           onClick={toggleTheme}
           className="p-2 text-red-100 hover:text-white hover:bg-white/10 rounded-full transition"
-          title={mounted && isDark ? "Aktifkan Tema Terang" : "Aktifkan Tema Gelap"}
+          title={isDark ? "Aktifkan Tema Terang" : "Aktifkan Tema Gelap"}
           aria-label="Toggle Theme"
         >
-          {mounted && isDark ? <Sun size={20} /> : <Moon size={20} />}
+          {isDark ? <Sun size={20} /> : <Moon size={20} />}
         </button>
 
         <AparNotificationBadge />

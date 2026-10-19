@@ -143,7 +143,7 @@ export default function EvidenceClientPage({
       const { getEvidenceRecords } = await import('@/app/actions/evidence')
       const res = await getEvidenceRecords(selectedArea, selectedPeriode)
       if (res.success && res.data) {
-        setRecords(res.data as any)
+        setRecords(res.data)
         toast.success(`Menampilkan data ${selectedArea} (${selectedPeriode})`)
       }
     })
@@ -171,10 +171,11 @@ export default function EvidenceClientPage({
     setIsUploading(false)
 
     if (res.success && res.data) {
+      const uploadedRecord = res.data
       toast.success(`Evidence ${modalItem.item.code || modalItem.item.title} berhasil diunggah!`)
       setRecords((prev) => {
         const filtered = prev.filter((r) => r.itemCode !== itemKey)
-        return [...filtered, res.data as any]
+        return [...filtered, uploadedRecord]
       })
       setModalItem(null)
       setUploadFile(null)

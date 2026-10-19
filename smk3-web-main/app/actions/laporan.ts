@@ -86,13 +86,13 @@ export async function deleteLaporan(laporanId: number, fileUrl: string) {
     const filePath = join(process.cwd(), 'public', fileUrl)
     try {
         await unlink(filePath) 
-    } catch (e) {
+    } catch {
         console.log("File fisik tidak ditemukan/sudah terhapus")
     }
 
     revalidatePath('/admin/monitoring')
     return { success: true }
-  } catch (error) {
+  } catch {
     return { success: false, message: 'Gagal menghapus' }
   }
 }

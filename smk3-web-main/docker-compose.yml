@@ -15,10 +15,10 @@ services:
       # Konfigurasi Database:
       # - Jika dijalankan di LAPTOP: otomatis menggunakan host.docker.internal ke PostgreSQL laptop
       # - Jika di SERVER: buat file .env di server dan isi DATABASE_URL sesuai database server
-      DATABASE_URL: ${DATABASE_URL:-postgresql://magang:6wx3pVKuM39AwAE2H1ObKeP8@host.docker.internal:5432/smk3_db?schema=public}
+      DATABASE_URL: ${DATABASE_URL:?Isi DATABASE_URL di file .env}
 
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3065}
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-telkom-smk3-secret-key-prod}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-}
       NODE_ENV: production
       CRON_SECRET: ${CRON_SECRET:-}
       APAR_WA_TO: ${APAR_WA_TO:-}

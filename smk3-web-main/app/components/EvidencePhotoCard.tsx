@@ -108,7 +108,10 @@ export default function EvidencePhotoCard({ photoData, title = "Foto Bukti" }: E
         {stamped && (
           <a
             href={stamped}
-            download={`BUKTI_TIMESTAMP_${Date.now()}.jpg`}
+            download="BUKTI_TIMESTAMP.jpg"
+            onClickCapture={(event) => {
+              event.currentTarget.download = `BUKTI_TIMESTAMP_${Date.now()}.jpg`
+            }}
             className="flex-1 min-w-[170px] flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-sm transition active:scale-95"
           >
             <Download size={15} /> Download Ber-Timestamp
@@ -118,7 +121,10 @@ export default function EvidencePhotoCard({ photoData, title = "Foto Bukti" }: E
         {original && (
           <a
             href={original}
-            download={`BUKTI_ASLI_${Date.now()}.jpg`}
+            download="BUKTI_ASLI.jpg"
+            onClickCapture={(event) => {
+              event.currentTarget.download = `BUKTI_ASLI_${Date.now()}.jpg`
+            }}
             className="flex-1 min-w-[170px] flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm transition active:scale-95"
           >
             <Download size={15} /> Download Foto Asli
@@ -128,7 +134,10 @@ export default function EvidencePhotoCard({ photoData, title = "Foto Bukti" }: E
         {!hasBoth && !original && stamped && (
           <a
             href={stamped}
-            download={`BUKTI_${Date.now()}.jpg`}
+            download="BUKTI.jpg"
+            onClickCapture={(event) => {
+              event.currentTarget.download = `BUKTI_${Date.now()}.jpg`
+            }}
             className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-sm transition active:scale-95"
           >
             <Download size={15} /> Download Foto Bukti

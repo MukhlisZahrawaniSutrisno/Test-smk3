@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache'
 
 async function ensureTableExists() {
   try {
-    await (prisma as any).$executeRawUnsafe(`
+    await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "KriteriaReferenceDoc" (
         "id" TEXT NOT NULL PRIMARY KEY,
         "kriteriaNo" TEXT NOT NULL UNIQUE,
@@ -63,13 +63,13 @@ export async function POST(req: NextRequest) {
       fileName = file.name
     }
 
-    const existing = await (prisma as any).kriteriaReferenceDoc.findUnique({
+    const existing = await prisma.kriteriaReferenceDoc.findUnique({
       where: { kriteriaNo },
     })
 
     let savedRecord
     if (existing) {
-      savedRecord = await (prisma as any).kriteriaReferenceDoc.update({
+      savedRecord = await prisma.kriteriaReferenceDoc.update({
         where: { kriteriaNo },
         data: {
           docNumber,
@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
         },
       })
     } else {
-      savedRecord = await (prisma as any).kriteriaReferenceDoc.create({
+      savedRecord = await prisma.kriteriaReferenceDoc.create({
         data: {
           kriteriaNo,
           docNumber,
@@ -103,10 +103,10 @@ export async function POST(req: NextRequest) {
       filePath: savedRecord.filePath,
       fileName: savedRecord.fileName,
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in /api/kriteria-referensi POST:', error)
     return NextResponse.json(
-      { success: false, error: error.message || 'Gagal menyimpan dokumen referensi' },
+      { success: false, error: (error instanceof Error ? error.message : 'Gagal menyimpan dokumen referensi') },
       { status: 500 }
     )
   }
@@ -124,7 +124,7 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
-    const record = await (prisma as any).kriteriaReferenceDoc.findUnique({
+    const record = await prisma.kriteriaReferenceDoc.findUnique({
       where: { kriteriaNo },
     })
 
@@ -136,7 +136,7 @@ export async function DELETE(req: NextRequest) {
         console.warn('File might already be deleted on disk:', e)
       }
 
-      await (prisma as any).kriteriaReferenceDoc.update({
+      await prisma.kriteriaReferenceDoc.update({
         where: { kriteriaNo },
         data: {
           filePath: null,
@@ -149,10 +149,10 @@ export async function DELETE(req: NextRequest) {
     revalidatePath('/pegawai/kriteria-referensi')
 
     return NextResponse.json({ success: true })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in /api/kriteria-referensi DELETE:', error)
     return NextResponse.json(
-      { success: false, error: error.message || 'Gagal menghapus file referensi' },
+      { success: false, error: (error instanceof Error ? error.message : 'Gagal menghapus file referensi') },
       { status: 500 }
     )
   }

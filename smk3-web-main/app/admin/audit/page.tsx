@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+import { StatusTemuan, Kondisi } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
     Clock,
@@ -37,14 +39,16 @@ export default async function AdminAuditPage({
     const kondisiFilter = typeof unresolvedParams.kondisi === 'string' ? unresolvedParams.kondisi : 'ALL';
 
     // Menyusun kondisi pencarian berdasar param URL
-    let whereCondition: any = {};
+    const whereCondition: Prisma.TemuanAuditWhereInput = {};
 
-    if (statusFilter !== 'ALL') {
-        whereCondition.status = statusFilter;
+    const validStatus = Object.values(StatusTemuan).find((status) => status === statusFilter);
+    if (validStatus) {
+        whereCondition.status = validStatus;
     }
 
-    if (kondisiFilter !== 'ALL') {
-        whereCondition.kondisi = kondisiFilter;
+    const validKondisi = Object.values(Kondisi).find((kondisi) => kondisi === kondisiFilter);
+    if (validKondisi) {
+        whereCondition.kondisi = validKondisi;
     }
 
     if (q) {

@@ -18,10 +18,13 @@ import {
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
+import { parseSuratData, type SuratData } from "../surat/types";
 import { useReactToPrint } from "react-to-print";
 
+type ArchiveItem = Omit<Awaited<ReturnType<typeof getSuratList>>["data"][number], "data" | "createdAt"> & { data: SuratData; createdAt: string };
+
 export default function ArsipPage() {
-  const [listArsip, setListArsip] = useState<any[]>([]);
+  const [listArsip, setListArsip] = useState<ArchiveItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   // STATE TELEGRAM ...
@@ -30,12 +33,12 @@ export default function ArsipPage() {
     botToken: "",
     chatId: "",
   });
-  const [selectedItemForTel, setSelectedItemForTel] = useState<any>(null);
+  const [selectedItemForTel, setSelectedItemForTel] = useState<ArchiveItem | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [sendingStatus, setSendingStatus] = useState("");
 
   // STATE PRINTING ...
-  const [printData, setPrintData] = useState<any>(null);
+  const [printData, setPrintData] = useState<SuratData | null>(null);
   const printComponentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,8 +49,9 @@ export default function ArsipPage() {
         // DB: { id, nomor, perihal, type, data, createdAt }
         // UI expects same structure essentially
         // createdAt format might be Date object, UI expects string maybe?
-        const mapped = res.data.map((item: any) => ({
+        const mapped = res.data.map((item) => ({
           ...item,
+          data: parseSuratData(item.data),
           createdAt: new Date(item.createdAt).toLocaleString("id-ID"),
           // data is already JSON object
         }));
@@ -72,7 +76,7 @@ export default function ArsipPage() {
     }
   };
 
-  const handleOpenTelegram = (item: any) => {
+  const handleOpenTelegram = (item: ArchiveItem) => {
     if (!telegramConfig.botToken || !telegramConfig.chatId) {
       setSelectedItemForTel(item);
       setShowTelModal(true);
@@ -99,7 +103,7 @@ export default function ArsipPage() {
 
   // 🔥 FUNGSI GENERATE PDF (HIGH QUALITY - JS PDF + HTML TO IMAGE) 🔥
   const generateAndSendPDF = async (
-    item: any,
+    item: ArchiveItem,
     token: string,
     chatId: string
   ) => {
@@ -196,9 +200,9 @@ _Dokumen PDF terlampir (High Quality)._
           if (result.error_code === 401 || result.error_code === 400)
             setShowTelModal(true);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error(error);
-        alert(`❌ Error: ${error.message || "Gagal memproses."}`);
+        alert(`❌ Error: ${(error instanceof Error ? error.message : "Gagal memproses.")}`);
       } finally {
         setIsSending(false);
         setSendingStatus("");
@@ -216,7 +220,7 @@ _Dokumen PDF terlampir (High Quality)._
       : "Surat_SMK3",
   });
 
-  const handleDownloadClick = (item: any) => {
+  const handleDownloadClick = (item: ArchiveItem) => {
     const dataToPrint = { ...item.data, savedTemplateType: item.type };
     setPrintData(dataToPrint);
 
@@ -463,7 +467,7 @@ _Dokumen PDF terlampir (High Quality)._
 // ===========================================
 // 🔥 SURAT TEMPLATE (TABEL UNTUK HEADER = RAPI 100%) 🔥
 // ===========================================
-function SuratTemplate({ data }: { data: any }) {
+function SuratTemplate({ data }: { data: SuratData }) {
   const templateType =
     data.savedTemplateType || (data.triwulan ? "LAPORAN" : "UNDANGAN");
   const isLaporan = templateType === "LAPORAN";
@@ -479,17 +483,17 @@ function SuratTemplate({ data }: { data: any }) {
       fontFamily: "Arial, sans-serif",
       fontSize: "11pt",
       lineHeight: "1.15",
-      position: "relative" as "relative",
-      boxSizing: "border-box" as "border-box",
+      position: "relative" as const,
+      boxSizing: "border-box" as const,
     },
-    borderTable: { border: "1px solid black", borderCollapse: "collapse" as "collapse", width: "100%", fontSize: "10pt" },
+    borderTable: { border: "1px solid black", borderCollapse: "collapse" as const, width: "100%", fontSize: "10pt" },
     cell: { border: "1px solid black", padding: "4px", verticalAlign: "top" },
-    logo: { height: "70px", width: "auto", objectFit: "contain" as "contain", marginRight: "5px" },
+    logo: { height: "70px", width: "auto", objectFit: "contain" as const, marginRight: "5px" },
 
     // STYLE KHUSUS HEADER TABLE
     headerTable: {
       width: "100%",
-      borderCollapse: "collapse" as "collapse",
+      borderCollapse: "collapse" as const,
       marginBottom: "1rem",
       fontSize: "11pt",
       border: "none",
@@ -510,13 +514,13 @@ function SuratTemplate({ data }: { data: any }) {
     },
 
     watermark: {
-      position: "absolute" as "absolute",
+      position: "absolute" as const,
       inset: 0,
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       zIndex: 0,
-      pointerEvents: "none" as "none",
+      pointerEvents: "none" as const,
       overflow: "hidden"
     },
     watermarkText: {
@@ -525,7 +529,7 @@ function SuratTemplate({ data }: { data: any }) {
       fontWeight: "800",
       transform: "rotate(-45deg)",
       opacity: 0.4,
-      userSelect: "none" as "none"
+      userSelect: "none" as const
     }
   };
 

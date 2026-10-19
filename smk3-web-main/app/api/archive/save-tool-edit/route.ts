@@ -87,10 +87,10 @@ export async function POST(req: NextRequest) {
       filePath: newFilePath,
       data: updatedDoc,
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error("Save Tool Edit Error:", error)
     return NextResponse.json(
-      { success: false, message: error?.message || "Gagal menyimpan perubahan ke dokumen arsip" },
+      { success: false, message: (error instanceof Error ? error.message : "Gagal menyimpan perubahan ke dokumen arsip") },
       { status: 500 }
     )
   }

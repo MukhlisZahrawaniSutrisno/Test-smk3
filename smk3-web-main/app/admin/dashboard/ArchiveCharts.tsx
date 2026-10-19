@@ -26,39 +26,42 @@ const COLORS = [
   "#3b82f6", "#6366f1", "#8b5cf6", "#ec4899", "#64748b"
 ];
 
-export default function ArchiveCharts({ typeData, yearData }: ArchiveChartsProps) {
-  const CustomPieTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-1 min-w-[140px] text-xs">
-          <p className="font-bold text-slate-800 dark:text-slate-100">{payload[0].name}</p>
-          <p className="font-extrabold text-red-600 dark:text-red-400 text-sm">
-            {payload[0].value} Dokumen
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+type ChartTooltipProps = { active?: boolean; payload?: { name?: string; value?: number | string }[]; label?: string | number };
 
-  const CustomAreaTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-1 min-w-[140px] text-xs">
-          <p className="text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider mb-1">
-            Tahun {label}
-          </p>
-          <p className="text-xl font-black text-slate-800 dark:text-slate-100">
-            {payload[0].value}{" "}
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Dokumen
-            </span>
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+const CustomPieTooltip = ({ active, payload }: ChartTooltipProps) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-1 min-w-[140px] text-xs">
+        <p className="font-bold text-slate-800 dark:text-slate-100">{payload[0].name}</p>
+        <p className="font-extrabold text-red-600 dark:text-red-400 text-sm">
+          {payload[0].value} Dokumen
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomAreaTooltip = ({ active, payload, label }: ChartTooltipProps) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-3.5 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-1 min-w-[140px] text-xs">
+        <p className="text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider mb-1">
+          Tahun {label}
+        </p>
+        <p className="text-xl font-black text-slate-800 dark:text-slate-100">
+          {payload[0].value}{" "}
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            Dokumen
+          </span>
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
+
+export default function ArchiveCharts({ typeData, yearData }: ArchiveChartsProps) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

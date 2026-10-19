@@ -24,6 +24,8 @@ import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
+import { parseSuratData } from "./types";
+
 // TIPE TEMPLATE
 type TemplateType = "UNDANGAN" | "LAPORAN";
 
@@ -157,8 +159,10 @@ function SuratEditor() {
       if (arsipId) {
         const res = await getSuratById(arsipId);
         if (res.success && res.data) {
-          const d = res.data.data as any; // Cast from JSON
-          setTemplate(res.data.type as any);
+          const d = parseSuratData(res.data.data);
+          if (res.data.type === "UNDANGAN" || res.data.type === "LAPORAN") {
+            setTemplate(res.data.type);
+          }
           // ... set all states ...
           // Mapping data fields manually or just spread if structure matches
           setNomorSurat(d.nomorSurat);
@@ -1218,7 +1222,7 @@ function InputGroup({
   );
 }
 
-function TabButton({ label, active, onClick }: any) {
+function TabButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}

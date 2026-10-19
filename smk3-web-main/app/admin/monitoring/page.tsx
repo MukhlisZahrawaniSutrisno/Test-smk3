@@ -36,8 +36,12 @@ const BULAN = [
   "DES",
 ];
 
+type MonitoringWitel = Awaited<ReturnType<typeof getMonitoringData>>[number];
+type MonthlyReport = MonitoringWitel["laporan"][number];
+type SelectedCell = { witelId: number; witelName: string; monthIndex: number; laporan: MonthlyReport | null };
+
 export default function MonitoringPage() {
-  const [dataWitel, setDataWitel] = useState<any[]>([]);
+  const [dataWitel, setDataWitel] = useState<MonitoringWitel[]>([]);
   const [year, setYear] = useState(2025);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
@@ -45,7 +49,7 @@ export default function MonitoringPage() {
 
   // STATE MODAL
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedCell, setSelectedCell] = useState<any>(null);
+  const [selectedCell, setSelectedCell] = useState<SelectedCell | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -113,8 +117,8 @@ export default function MonitoringPage() {
     }
   };
 
-  const getLaporanStatus = (laporanList: any[], monthIndex: number) => {
-    return laporanList.find((l: any) => l.bulanIndex === monthIndex) || null;
+  const getLaporanStatus = (laporanList: MonthlyReport[], monthIndex: number) => {
+    return laporanList.find((l) => l.bulanIndex === monthIndex) || null;
   };
 
   const filteredData = dataWitel.filter((item) =>
@@ -125,7 +129,7 @@ export default function MonitoringPage() {
     witelId: number,
     witelName: string,
     monthIndex: number,
-    laporan: any,
+    laporan: MonthlyReport | null,
   ) => {
     setSelectedCell({ witelId, witelName, monthIndex, laporan });
     setModalOpen(true);
@@ -349,12 +353,10 @@ export default function MonitoringPage() {
                       <Eye size={16} /> BUKA PDF
                     </a>
                     <button
-                      onClick={() =>
-                        handleDelete(
-                          selectedCell.laporan.id,
-                          selectedCell.laporan.fileUrl,
-                        )
-                      }
+                      onClick={() => {
+                        const laporan = selectedCell.laporan;
+                        if (laporan) handleDelete(laporan.id, laporan.fileUrl);
+                      }}
                       className="flex items-center justify-center px-4 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-600 hover:text-white transition-all shadow-sm"
                     >
                       <Trash2 size={18} />

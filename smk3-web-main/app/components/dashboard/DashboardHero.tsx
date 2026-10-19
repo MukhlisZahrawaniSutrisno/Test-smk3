@@ -1,15 +1,12 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import {
   ShieldCheck,
-  Sparkles,
   AlertTriangle,
   Ambulance,
   PlusCircle,
-  Clock,
-  PhoneCall,
   Calendar,
   CheckCircle2
 } from 'lucide-react'
@@ -21,30 +18,34 @@ interface DashboardHeroProps {
   openAuditsCount?: number
 }
 
+function subscribeClock(onChange: () => void) {
+  const interval = window.setInterval(onChange, 60_000)
+  return () => window.clearInterval(interval)
+}
+
+function getClockSnapshot() {
+  const now = new Date()
+  const hour = now.getHours()
+  const greeting = hour >= 4 && hour < 11 ? 'Selamat Pagi'
+    : hour >= 11 && hour < 15 ? 'Selamat Siang'
+    : hour >= 15 && hour < 18 ? 'Selamat Sore' : 'Selamat Malam'
+  const date = new Intl.DateTimeFormat('id-ID', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  }).format(now)
+  return `${greeting}|${date}`
+}
+
+function getServerClockSnapshot() {
+  return 'Selamat Datang|'
+}
+
 export default function DashboardHero({
   userName,
   userRole,
   openIncidentsCount = 0,
-  openAuditsCount = 0,
 }: DashboardHeroProps) {
-  const [greeting, setGreeting] = useState('Selamat Datang')
-  const [currentDateStr, setCurrentDateStr] = useState('')
-
-  useEffect(() => {
-    const hour = new Date().getHours()
-    if (hour >= 4 && hour < 11) setGreeting('Selamat Pagi')
-    else if (hour >= 11 && hour < 15) setGreeting('Selamat Siang')
-    else if (hour >= 15 && hour < 18) setGreeting('Selamat Sore')
-    else setGreeting('Selamat Malam')
-
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    }
-    setCurrentDateStr(new Intl.DateTimeFormat('id-ID', options).format(new Date()))
-  }, [])
+  const clock = useSyncExternalStore(subscribeClock, getClockSnapshot, getServerClockSnapshot)
+  const [greeting, currentDateStr] = clock.split('|')
 
   const roleLabels: Record<string, { title: string; color: string; desc: string }> = {
     ADMIN: {

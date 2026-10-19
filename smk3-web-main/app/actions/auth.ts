@@ -29,7 +29,7 @@ export async function loginAction(formData: FormData) {
     else if (user.role === "AUDITOR") redirectPath = "/admin/dashboard"
 
     return { success: true, redirectPath }
-  } catch (error: any) {
+  } catch (error) {
     console.error("Login error:", error)
     return { success: false, message: "Terjadi kesalahan di server saat login" }
   }

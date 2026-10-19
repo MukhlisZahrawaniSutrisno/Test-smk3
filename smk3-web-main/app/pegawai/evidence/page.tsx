@@ -1,3 +1,4 @@
+import type { EvidenceSmk3 } from "@prisma/client"
 export const dynamic = 'force-dynamic'
 
 import { cookies } from 'next/headers'
@@ -18,9 +19,9 @@ export default async function PegawaiEvidencePage() {
   const defaultArea = EVIDENCE_AREAS[0]
   const defaultPeriode = EVIDENCE_PERIODS[0]
 
-  let records: any[] = []
+  let records: EvidenceSmk3[] = []
   try {
-    records = await (prisma as any).evidenceSmk3.findMany({
+    records = await prisma.evidenceSmk3.findMany({
       where: {
         area: defaultArea,
         periode: defaultPeriode,

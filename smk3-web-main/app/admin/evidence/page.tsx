@@ -1,3 +1,4 @@
+import type { EvidenceSmk3 } from "@prisma/client"
 export const dynamic = 'force-dynamic'
 
 import { prisma } from '@/lib/prisma'
@@ -8,9 +9,9 @@ export default async function AdminEvidencePage() {
   const defaultArea = EVIDENCE_AREAS[0] // '-TELKOM REGIONAL-III'
   const defaultPeriode = EVIDENCE_PERIODS[0] // 2026
 
-  let records: any[] = []
+  let records: EvidenceSmk3[] = []
   try {
-    records = await (prisma as any).evidenceSmk3.findMany({
+    records = await prisma.evidenceSmk3.findMany({
       where: {
         area: defaultArea,
         periode: defaultPeriode,

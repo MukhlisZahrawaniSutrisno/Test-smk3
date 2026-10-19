@@ -16,15 +16,6 @@ export default function IncidentFilter() {
     const [searchTerm, setSearchTerm] = useState(initialSearch);
     const [statusParam, setStatusParam] = useState(initialStatus);
 
-    // Debounce untuk Search Input
-    useEffect(() => {
-        const delayDebounceFn = setTimeout(() => {
-            createQueryString("q", searchTerm);
-        }, 500); // Tunggu 500ms setelah user berhenti mengetik baru ubah URL
-
-        return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm]);
-
     const createQueryString = useCallback(
         (name: string, value: string) => {
             const params = new URLSearchParams(searchParams.toString());
@@ -41,6 +32,15 @@ export default function IncidentFilter() {
         },
         [searchParams, pathname, router]
     );
+
+    // Debounce untuk Search Input
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            createQueryString("q", searchTerm);
+        }, 500); // Tunggu 500ms setelah user berhenti mengetik baru ubah URL
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchTerm]);
 
     const resetFilter = () => {
         setSearchTerm("");

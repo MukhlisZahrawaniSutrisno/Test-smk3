@@ -18,15 +18,6 @@ export default function AuditFilter() {
     const [statusParam, setStatusParam] = useState(initialStatus);
     const [kondisiParam, setKondisiParam] = useState(initialKondisi);
 
-    // Debounce untuk Search Input
-    useEffect(() => {
-        const delayDebounceFn = setTimeout(() => {
-            createQueryString("q", searchTerm);
-        }, 500);
-
-        return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm]);
-
     const createQueryString = useCallback(
         (name: string, value: string) => {
             const params = new URLSearchParams(searchParams.toString());
@@ -39,6 +30,15 @@ export default function AuditFilter() {
         },
         [searchParams, pathname, router]
     );
+
+    // Debounce untuk Search Input
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            createQueryString("q", searchTerm);
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchTerm]);
 
     const resetFilter = () => {
         setSearchTerm("");

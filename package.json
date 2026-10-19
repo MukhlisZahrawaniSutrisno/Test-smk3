@@ -1,4 +1,12 @@
 {
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix smk3-web-main run dev",
+    "build": "npm --prefix smk3-web-main run build",
+    "start": "npm --prefix smk3-web-main run start",
+    "lint": "npm --prefix smk3-web-main run lint",
+    "test": "npm --prefix smk3-web-main test"
+  },
   "devDependencies": {
     "tsx": "^4.23.15"
   }

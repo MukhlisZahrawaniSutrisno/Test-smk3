@@ -177,7 +177,7 @@ export default function AuditSimulatorSection() {
               <div
                 key={lvl.id}
                 onClick={() => {
-                  setSelectedLevel(lvl.id as any)
+                  setSelectedLevel(lvl.id as typeof selectedLevel)
                 }}
                 className={`cursor-pointer p-6 rounded-3xl border transition-all relative flex flex-col justify-between ${
                   isSelected

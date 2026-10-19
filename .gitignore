@@ -1,0 +1,9 @@
+# Dependencies and generated build files anywhere in the workspace
+node_modules/
+.next/
+*.tsbuildinfo
+
+# Local secrets; only templates belong in Git
+.env
+.env.*
+!.env.example

@@ -22,32 +22,33 @@ interface IncidentChartProps {
   }[];
 }
 
+type ChartTooltipProps = { active?: boolean; payload?: { name?: string; value?: number | string }[]; label?: string | number };
+
+const CustomTooltip = ({ active, payload, label }: ChartTooltipProps) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-1 min-w-[130px]">
+        <p className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">
+          Bulan {label}
+        </p>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-red-500 shadow-sm shadow-red-500/50"></div>
+          <p className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tighter">
+            {payload[0].value}{" "}
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Insiden
+            </span>
+          </p>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function IncidentChart({ data }: IncidentChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [chartType, setChartType] = useState<"bar" | "area">("area");
-
-  // Custom Tooltip for premium look
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-1 min-w-[130px]">
-          <p className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider mb-1">
-            Bulan {label}
-          </p>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-500 shadow-sm shadow-red-500/50"></div>
-            <p className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tighter">
-              {payload[0].value}{" "}
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                Insiden
-              </span>
-            </p>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
 
   const totalIncidentsInChart = data.reduce((acc, curr) => acc + curr.total, 0);
 

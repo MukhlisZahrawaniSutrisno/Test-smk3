@@ -7,22 +7,12 @@ import {
   VolumeX,
   Play,
   Pause,
-  RotateCcw,
   Clock,
   ShieldAlert,
-  AlertTriangle,
-  Flame,
-  Zap,
-  Activity,
-  HeartPulse,
   PhoneCall,
-  CheckCircle2,
-  ListOrdered,
-  ChevronDown,
-  ChevronUp
 } from 'lucide-react'
 import { PROTAP_DATA, ProtapItem } from '@/app/utils/protapData'
-import { speakProtap, stopSpeech, isSpeechSupported } from '@/app/utils/speechHelper'
+import { speakProtap, stopSpeech } from '@/app/utils/speechHelper'
 import toast from 'react-hot-toast'
 
 export default function EmergencyProtapHub() {
@@ -59,18 +49,17 @@ export default function EmergencyProtapHub() {
 
   // Timer interval
   useEffect(() => {
-    let interval: any = null
-    if (isTimerRunning && timerSeconds > 0) {
-      interval = setInterval(() => {
-        setTimerSeconds((prev) => prev - 1)
-      }, 1000)
-    } else if (timerSeconds === 0 && isTimerRunning) {
-      setIsTimerRunning(false)
-      toast.success(`Waktu pertolongan pertama (${timerInitialMinutes} menit) telah selesai!`, {
-        duration: 6000,
-        icon: '🔔'
-      })
-    }
+    if (!isTimerRunning) return
+    const interval = setInterval(() => {
+      setTimerSeconds((prev) => Math.max(0, prev - 1))
+      if (timerSeconds <= 1) {
+        setIsTimerRunning(false)
+        toast.success(`Waktu pertolongan pertama (${timerInitialMinutes} menit) telah selesai!`, {
+          duration: 6000,
+          icon: '🔔'
+        })
+      }
+    }, 1000)
     return () => clearInterval(interval)
   }, [isTimerRunning, timerSeconds, timerInitialMinutes])
 
@@ -213,7 +202,6 @@ export default function EmergencyProtapHub() {
             ) : (
               filteredProtaps.map((item) => {
                 const isSelected = activeProtapId === item.id
-                const isSpeaking = speakingId === item.id
                 return (
                   <div
                     key={item.id}

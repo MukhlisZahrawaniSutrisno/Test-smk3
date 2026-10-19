@@ -134,8 +134,8 @@ export default function KriteriaClient({ initialData, userRole, userName }: Krit
       } else {
         showNotification('error', res.error || 'Terjadi kesalahan saat menyimpan.')
       }
-    } catch (err: any) {
-      showNotification('error', err.message || 'Gagal menyimpan dokumen.')
+    } catch (err: unknown) {
+      showNotification('error', err instanceof Error ? err.message : 'Gagal menyimpan dokumen.')
     } finally {
       setIsSubmitting(false)
     }
@@ -161,8 +161,8 @@ export default function KriteriaClient({ initialData, userRole, userName }: Krit
       } else {
         showNotification('error', res.error || 'Gagal menghapus berkas.')
       }
-    } catch (err: any) {
-      showNotification('error', err.message || 'Gagal menghapus berkas.')
+    } catch (err: unknown) {
+      showNotification('error', err instanceof Error ? err.message : 'Gagal menghapus berkas.')
     } finally {
       setDeletingKriteriaNo(null)
     }

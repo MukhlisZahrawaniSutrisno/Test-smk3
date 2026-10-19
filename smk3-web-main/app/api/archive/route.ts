@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { writeFile, mkdir, unlink } from "fs/promises"
 import { join } from "path"
+import type { Prisma } from "@prisma/client"
 
 export async function POST(req: NextRequest) {
   try {
@@ -54,10 +55,10 @@ export async function POST(req: NextRequest) {
       message: "Dokumen arsip berhasil disimpan!",
       data: newDoc,
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error("API Archive Error:", error)
     return NextResponse.json(
-      { success: false, message: error?.message || "Terjadi kesalahan di server" },
+      { success: false, message: (error instanceof Error ? error.message : "Terjadi kesalahan di server") },
       { status: 500 }
     )
   }
@@ -101,7 +102,7 @@ export async function PUT(req: NextRequest) {
       )
     }
 
-    const updateData: any = {
+    const updateData: Prisma.DocumentArchiveUpdateInput = {
       documentNumber,
       title,
       documentType,
@@ -149,10 +150,10 @@ export async function PUT(req: NextRequest) {
       message: "Dokumen arsip berhasil diperbarui!",
       data: updatedDoc,
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error("API Archive Update Error:", error)
     return NextResponse.json(
-      { success: false, message: error?.message || "Terjadi kesalahan saat update dokumen" },
+      { success: false, message: (error instanceof Error ? error.message : "Terjadi kesalahan saat update dokumen") },
       { status: 500 }
     )
   }

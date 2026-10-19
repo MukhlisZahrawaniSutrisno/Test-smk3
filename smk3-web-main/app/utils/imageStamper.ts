@@ -213,7 +213,7 @@ export const stampImage = async (
         totalBoxHeight = textBlockHeight + (boxPaddingY * 2);
       }
       
-      let boxX2 = width - margin;
+      const boxX2 = width - margin;
       let boxX1 = boxX2 - totalBoxWidth;
       if (boxX1 < margin) boxX1 = margin;
       
@@ -225,8 +225,8 @@ export const stampImage = async (
       ctx.beginPath();
       const r = Math.round(8 * scale);
       
-      if ((ctx as any).roundRect) {
-        (ctx as any).roundRect(boxX1, boxY1, totalBoxWidth, totalBoxHeight, r);
+      if (typeof ctx.roundRect === 'function') {
+        ctx.roundRect(boxX1, boxY1, totalBoxWidth, totalBoxHeight, r);
       } else {
         ctx.rect(boxX1, boxY1, totalBoxWidth, totalBoxHeight);
       }

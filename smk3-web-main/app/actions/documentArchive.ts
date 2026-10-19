@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { writeFile, mkdir, unlink } from "fs/promises"
 import { join } from "path"
+import type { Prisma } from "@prisma/client"
 
 export async function createDocumentArchive(formData: FormData) {
   try {
@@ -83,7 +84,7 @@ export async function updateDocumentArchive(id: string, formData: FormData) {
       return { success: false, message: "Dokumen tidak ditemukan!" }
     }
 
-    const updateData: any = {
+    const updateData: Prisma.DocumentArchiveUpdateInput = {
       documentNumber: documentNumber || null,
       title,
       documentType,

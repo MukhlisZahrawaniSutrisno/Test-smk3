@@ -42,7 +42,10 @@ export default function EvidenceDownloadDropdown({ photoData }: EvidenceDownload
         </a>
         <a
           href={primary}
-          download={`BUKTI_${Date.now()}.jpg`}
+          download="BUKTI.jpg"
+          onClickCapture={(event) => {
+            event.currentTarget.download = `BUKTI_${Date.now()}.jpg`
+          }}
           title="Unduh Berkas"
           className="p-1 text-slate-400 hover:text-red-600 transition"
         >
@@ -75,7 +78,10 @@ export default function EvidenceDownloadDropdown({ photoData }: EvidenceDownload
           {stamped && (
             <a
               href={stamped}
-              download={`BUKTI_TIMESTAMP_${Date.now()}.jpg`}
+              download="BUKTI_TIMESTAMP.jpg"
+              onClickCapture={(event) => {
+                event.currentTarget.download = `BUKTI_TIMESTAMP_${Date.now()}.jpg`
+              }}
               onClick={() => setIsOpen(false)}
               className="flex items-center justify-between gap-2 px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 dark:hover:text-emerald-400 rounded-lg transition"
             >
@@ -91,7 +97,10 @@ export default function EvidenceDownloadDropdown({ photoData }: EvidenceDownload
           {original && (
             <a
               href={original}
-              download={`BUKTI_ASLI_${Date.now()}.jpg`}
+              download="BUKTI_ASLI.jpg"
+              onClickCapture={(event) => {
+                event.currentTarget.download = `BUKTI_ASLI_${Date.now()}.jpg`
+              }}
               onClick={() => setIsOpen(false)}
               className="flex items-center justify-between gap-2 px-2.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 rounded-lg transition"
             >

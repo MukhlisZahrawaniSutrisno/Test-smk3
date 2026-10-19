@@ -3,12 +3,12 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-export async function saveSurat(data: any) {
+export async function saveSurat(data: Record<string, string>) {
     try {
-        const { nomor, perihal, type, ...rest } = data;
+        const { nomor, perihal, type } = data;
 
         // Validasi basic
-        if (!nomor || !perihal) {
+        if (typeof nomor !== "string" || !nomor || typeof perihal !== "string" || !perihal) {
             return { success: false, error: "Nomor dan Perihal wajib diisi" };
         }
 
@@ -16,16 +16,16 @@ export async function saveSurat(data: any) {
             data: {
                 nomor,
                 perihal,
-                type: type || "UNDANGAN",
+                type: typeof type === "string" && type ? type : "UNDANGAN",
                 data: data, // Simpan semua raw data JSON juga untuk kemudahan
             },
         });
 
         revalidatePath("/admin/arsip");
         return { success: true, data: newSurat };
-    } catch (error: any) {
+    } catch (error) {
         console.error("Error saving surat:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: error instanceof Error ? error.message : "Gagal menyimpan surat" };
     }
 }
 
@@ -37,7 +37,7 @@ export async function getSuratList() {
 
         // Format tanggal untuk frontend jika perlu, atau kirim raw
         return { success: true, data: list };
-    } catch (error: any) {
+    } catch (error) {
         console.error("Error fetching surat:", error);
         return { success: false, data: [] };
     }
@@ -50,8 +50,8 @@ export async function deleteSurat(id: string) {
         });
         revalidatePath("/admin/arsip");
         return { success: true };
-    } catch (error: any) {
-        return { success: false, error: error.message };
+    } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : "Gagal menghapus surat" };
     }
 }
 
@@ -62,7 +62,7 @@ export async function getSuratById(id: string) {
         });
         if (!surat) return { success: false, error: "Surat tidak ditemukan" };
         return { success: true, data: surat };
-    } catch (error: any) {
-        return { success: false, error: error.message };
+    } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : "Gagal mengambil surat" };
     }
 }
