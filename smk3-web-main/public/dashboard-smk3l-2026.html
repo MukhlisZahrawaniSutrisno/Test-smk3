@@ -123,8 +123,8 @@
   </dialog>
 
   <dialog id="rescheduleDialog" aria-labelledby="rescheduleTitle">
-    <div class="dialog-heading"><div><div class="dialog-title-row"><i data-lucide="calendar-clock" aria-hidden="true"></i><h2 id="rescheduleTitle">Atur ulang agenda</h2></div><p>Beri waktu baru untuk kegiatan yang terlewat.</p></div><button type="button" class="close-dialog" data-close="rescheduleDialog" aria-label="Tutup agenda ulang"><i data-lucide="x" aria-hidden="true"></i></button></div>
-    <form id="rescheduleForm"><div class="dialog-body"><div class="activity-callout"><strong id="rescheduleActivity">Kegiatan</strong><small id="rescheduleOriginalDate"></small></div><p id="rescheduleError" class="form-error" role="alert" hidden></p><div class="form-group"><label for="rescheduleDate">Tanggal baru<span class="required">*</span></label><input id="rescheduleDate" name="date" type="date" required><small class="form-hint">Pilih tanggal setelah jadwal awal, hingga akhir tahun berikutnya.</small></div><div class="form-group"><label for="rescheduleReason">Alasan penundaan<span class="required">*</span></label><textarea id="rescheduleReason" name="reason" placeholder="Jelaskan alasan kegiatan perlu dijadwalkan ulang..." minlength="8" maxlength="400" required></textarea></div><div class="form-group" style="margin-bottom:0"><label for="rescheduleOwner">Penanggung jawab<span class="required">*</span></label><input id="rescheduleOwner" name="owner" type="text" placeholder="Nama penanggung jawab kegiatan" minlength="3" maxlength="80" required></div></div><div class="dialog-footer"><button type="button" class="button" data-close="rescheduleDialog">Batal</button><button type="submit" class="button primary" id="saveRescheduleButton"><i data-lucide="calendar-check" aria-hidden="true"></i>Simpan agenda</button></div></form>
+    <div class="dialog-heading"><div><div class="dialog-title-row"><i data-lucide="calendar-clock" aria-hidden="true"></i><h2 id="rescheduleTitle">Ubah status kegiatan</h2></div><p>Perbarui hasil kegiatan atau atur jadwal ulang.</p></div><button type="button" class="close-dialog" data-close="rescheduleDialog" aria-label="Tutup edit status"><i data-lucide="x" aria-hidden="true"></i></button></div>
+    <form id="rescheduleForm"><div class="dialog-body"><div class="activity-callout"><strong id="rescheduleActivity">Kegiatan</strong><small id="rescheduleOriginalDate"></small></div><p id="rescheduleError" class="form-error" role="alert" hidden></p><div class="form-group"><label for="editActivityStatus">Status kegiatan<span class="required">*</span></label><select id="editActivityStatus" name="status" required><option value="upcoming">Mendatang</option><option value="completed">Selesai</option><option value="missed">Terlewat</option><option value="rescheduled">Rescheduled</option></select></div><div id="rescheduleFields" hidden><div class="form-group"><label for="rescheduleDate">Tanggal baru<span class="required">*</span></label><input id="rescheduleDate" name="date" type="date"><small class="form-hint">Pilih tanggal setelah jadwal awal, hingga akhir tahun berikutnya.</small></div><div class="form-group"><label for="rescheduleReason">Alasan penundaan<span class="required">*</span></label><textarea id="rescheduleReason" name="reason" placeholder="Jelaskan alasan kegiatan perlu dijadwalkan ulang..." minlength="8" maxlength="400"></textarea></div><div class="form-group" style="margin-bottom:0"><label for="rescheduleOwner">Penanggung jawab<span class="required">*</span></label><input id="rescheduleOwner" name="owner" type="text" placeholder="Nama penanggung jawab kegiatan" minlength="3" maxlength="80"></div></div></div><div class="dialog-footer"><button type="button" class="button" data-close="rescheduleDialog">Batal</button><button type="submit" class="button primary" id="saveActivityStatusButton"><i data-lucide="save" aria-hidden="true"></i>Simpan perubahan</button></div></form>
   </dialog>
 
   <dialog id="documentDialog" class="document-dialog" aria-labelledby="documentTitle">
@@ -197,7 +197,7 @@
       let pendingTemplates = [];
       let selectedMonth = 'all';
       let activeActivityId = null;
-      let rescheduleActivityId = null;
+      let editingActivityId = null;
       let deleteActivityId = null;
       let deleteDocumentId = null;
       let selectedPdfIds = [];
@@ -338,7 +338,10 @@
       }
 
       function actionButtons(activity) {
-        return `<div class="row-actions"><button type="button" class="button small doc-button" data-action="documents" data-id="${activity.id}" aria-label="Lihat dokumen ${escapeHTML(activity.name)}">${icon('folder-open')}<span>Lihat Dokumen</span></button>${activity.status === 'missed' ? `<button type="button" class="button small reschedule-button" data-action="reschedule" data-id="${activity.id}" aria-label="Atur ulang ${escapeHTML(activity.name)}">${icon('rotate-cw')}Atur Ulang</button>` : ''}<button type="button" class="delete-activity" data-action="delete" data-id="${activity.id}" aria-label="Hapus kegiatan ${escapeHTML(activity.name)}" title="Hapus kegiatan">${icon('trash-2')}</button></div>`;
+        const statusAction = activity.status === 'missed'
+          ? `<button type="button" class="button small reschedule-button" data-action="reschedule" data-id="${activity.id}" aria-label="Edit status ${escapeHTML(activity.name)}">${icon('rotate-cw')}Atur Ulang</button>`
+          : `<button type="button" class="button small" data-action="edit-status" data-id="${activity.id}" aria-label="Edit status ${escapeHTML(activity.name)}">${icon('pencil')}Edit Status</button>`;
+        return `<div class="row-actions"><button type="button" class="button small doc-button" data-action="documents" data-id="${activity.id}" aria-label="Lihat dokumen ${escapeHTML(activity.name)}">${icon('folder-open')}<span>Lihat Dokumen</span></button>${statusAction}<button type="button" class="delete-activity" data-action="delete" data-id="${activity.id}" aria-label="Hapus kegiatan ${escapeHTML(activity.name)}" title="Hapus kegiatan">${icon('trash-2')}</button></div>`;
       }
 
       function renderSchedule() {
@@ -438,7 +441,7 @@
       function removeActivityLocally(id) {
         if (documentById(activePreviewId)?.activityId === id) $('previewDialog').close();
         if (activeActivityId === id) { $('documentDialog').close(); activeActivityId = null; selectedPdfIds = []; }
-        if (rescheduleActivityId === id) { $('rescheduleDialog').close(); rescheduleActivityId = null; }
+        if (editingActivityId === id) { $('rescheduleDialog').close(); editingActivityId = null; }
         activities = activities.filter(activity => activity.id !== id);
         records = records.filter(record => record.activityId !== id);
         render();
@@ -482,38 +485,55 @@
         } finally { $('confirmDeleteActivity').disabled = false; }
       };
 
-      function openReschedule(id) {
+      function toggleRescheduleFields() {
+        const showFields = $('editActivityStatus').value === 'rescheduled';
+        $('rescheduleFields').hidden = !showFields;
+        $('rescheduleDate').required = showFields;
+        $('rescheduleReason').required = showFields;
+        $('rescheduleOwner').required = showFields;
+      }
+
+      function openActivityStatus(id,status) {
         const activity = activityById(id);
-        if (!activity || activity.status !== 'missed') return;
-        rescheduleActivityId = id;
+        if (!activity) return;
+        editingActivityId = id;
         $('rescheduleForm').reset(); $('rescheduleError').hidden = true;
         $('rescheduleActivity').textContent = activity.name;
         $('rescheduleOriginalDate').textContent = `Jadwal awal: ${dateLabel(activity.plannedDate)} · ${activity.reference}`;
+        $('editActivityStatus').value = status || activity.status;
         const earliest = new Date(`${activity.plannedDate}T12:00:00Z`);
         earliest.setUTCDate(earliest.getUTCDate()+1);
         $('rescheduleDate').min = earliest.toISOString().slice(0,10);
         $('rescheduleDate').max = `${Number(activity.plannedDate.slice(0,4))+1}-12-31`;
+        $('rescheduleDate').value = activity.status === 'rescheduled' ? activity.rescheduledDate : '';
+        $('rescheduleReason').value = activity.status === 'rescheduled' ? activity.reason : '';
+        $('rescheduleOwner').value = activity.owner;
+        toggleRescheduleFields();
         openDialog('rescheduleDialog');
-        $('rescheduleDate').focus();
+        ($('editActivityStatus').value === 'rescheduled' ? $('rescheduleDate') : $('editActivityStatus')).focus();
       }
 
+      $('editActivityStatus').addEventListener('change',toggleRescheduleFields);
       $('rescheduleForm').addEventListener('submit',async event => {
         event.preventDefault();
-        const activity = activityById(rescheduleActivityId);
-        if (!activity || activity.status !== 'missed' || $('saveRescheduleButton').disabled) return;
+        const activity = activityById(editingActivityId);
+        if (!activity || !$('editActivityStatus').value || $('saveActivityStatusButton').disabled) return;
+        const status = $('editActivityStatus').value;
         const date = $('rescheduleDate').value;
         const reason = $('rescheduleReason').value.trim();
         const owner = $('rescheduleOwner').value.trim();
-        const error = !validDate(date,Number(activity.plannedDate.slice(0,4))+1) || date <= activity.plannedDate ? 'Pilih tanggal setelah jadwal awal, hingga akhir tahun berikutnya.' : reason.length < 8 ? 'Jelaskan alasan penundaan minimal 8 karakter.' : owner.length < 3 ? 'Isi nama penanggung jawab minimal 3 karakter.' : '';
+        const rescheduled = status === 'rescheduled';
+        const error = !Object.hasOwn(statuses,status) ? 'Pilih status kegiatan yang valid.' : rescheduled && (!validDate(date,Number(activity.plannedDate.slice(0,4))+1) || date <= activity.plannedDate) ? 'Pilih tanggal setelah jadwal awal, hingga akhir tahun berikutnya.' : rescheduled && reason.length < 8 ? 'Jelaskan alasan penundaan minimal 8 karakter.' : rescheduled && owner.length < 3 ? 'Isi nama penanggung jawab minimal 3 karakter.' : '';
         if (error) { $('rescheduleError').textContent = error; $('rescheduleError').hidden = false; return; }
-        $('saveRescheduleButton').disabled = true;
+        $('saveActivityStatusButton').disabled = true;
         try {
-          const updated = {...activity,status:'rescheduled',rescheduledDate:date,reason,owner};
+          const keepScheduleHistory = status === 'completed' && activity.status === 'rescheduled';
+          const updated = {...activity,status,rescheduledDate:rescheduled ? date : keepScheduleHistory ? activity.rescheduledDate : '',reason:rescheduled ? reason : keepScheduleHistory ? activity.reason : '',owner:rescheduled ? owner : activity.owner};
           if (!await saveActivity(updated)) { handleDeletedActivity(activity.id); return; }
           Object.assign(activity,updated);
           render(); $('rescheduleDialog').close();
-          toast(`Agenda berhasil diatur ulang ke ${dateLabel(date)}. Penanggung jawab: ${owner}.`);
-        } finally { $('saveRescheduleButton').disabled = false; }
+          toast(rescheduled ? `Agenda berhasil diatur ulang ke ${dateLabel(date)}. Penanggung jawab: ${owner}.` : `Status kegiatan diubah menjadi ${statuses[status].label}.`);
+        } finally { $('saveActivityStatusButton').disabled = false; }
       });
 
       function openDocuments(id,focusMerger=false) {
@@ -865,7 +885,8 @@
           renderPendingTemplates();
         }
         if (action.dataset.action === 'documents') openDocuments(action.dataset.id);
-        if (action.dataset.action === 'reschedule') openReschedule(action.dataset.id);
+        if (action.dataset.action === 'reschedule') openActivityStatus(action.dataset.id,'rescheduled');
+        if (action.dataset.action === 'edit-status') openActivityStatus(action.dataset.id);
         if (action.dataset.action === 'delete') openDeleteActivity(action.dataset.id);
         if (action.dataset.action === 'preview') previewDocument(documentById(action.dataset.docId));
         if (action.dataset.action === 'download') downloadDocument(documentById(action.dataset.docId));
