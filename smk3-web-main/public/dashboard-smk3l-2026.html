@@ -48,6 +48,7 @@
     .agenda-panel{overflow:visible}.table-wrap{overflow:visible}.panel-footer{border-radius:0 0 var(--radius) var(--radius)}
     .action-menu{position:relative}.action-menu[open]{z-index:40}.action-menu-toggle{list-style:none;width:42px;height:42px;border:1px solid var(--line);border-radius:8px;background:#fff;color:#596579;display:grid;place-items:center;cursor:pointer}.action-menu-toggle::-webkit-details-marker{display:none}.action-menu-toggle:hover,.action-menu[open]>.action-menu-toggle{background:#fff5f6;border-color:#f3c8cd;color:var(--red)}.action-menu-toggle:focus-visible{outline:3px solid #e3061340;outline-offset:3px}.action-menu-toggle svg{width:20px;height:20px}
     .action-menu-items{position:absolute;z-index:30;top:calc(100% + 6px);right:0;min-width:190px;padding:6px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px #17243b24;display:grid;gap:2px}.action-menu.opens-up .action-menu-items{top:auto;bottom:calc(100% + 6px)}.action-menu-items button{width:100%;min-height:42px;padding:9px 11px;border:0;border-radius:7px;background:transparent;color:var(--ink);display:flex;align-items:center;gap:10px;text-align:left;white-space:nowrap;font:inherit;font-size:14px}.action-menu-items button:hover,.action-menu-items button:focus-visible{background:#f5f7fa}.action-menu-items button svg{width:17px;height:17px;color:#687589}.action-menu-items button.danger{color:#b72835}.action-menu-items button.danger svg{color:#b72835}.action-menu-items button.danger:hover,.action-menu-items button.danger:focus-visible{background:#fff1f2}
+    .topbar-right{gap:0}.profile{padding-left:0;border-left:0}
   </style>
 </head>
 <body>
@@ -62,7 +63,6 @@
         <div class="app-title-block"><div class="app-name">Sistem Informasi Manajemen SMK3L</div><div class="app-context">Keselamatan, kesehatan kerja & lingkungan</div></div>
       </div>
       <div class="topbar-right">
-        <div class="live-clock"><strong id="liveDate">Memuat tanggal</strong><span id="liveTime">— WIB</span></div>
         <div class="profile"><div class="avatar" aria-hidden="true">MZ</div><div><strong>Muza</strong><small>Admin K3L</small></div><span class="online-indicator" title="Profil demo aktif"></span></div>
       </div>
     </div>
@@ -865,12 +865,6 @@
         return new Promise((resolve,reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Gambar contoh tidak tersedia.')),'image/jpeg',.88));
       }
 
-      function updateClock() {
-        const now = new Date();
-        $('liveDate').textContent = new Intl.DateTimeFormat('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Jakarta'}).format(now);
-        $('liveTime').textContent = `${new Intl.DateTimeFormat('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:'Asia/Jakarta'}).format(now).replaceAll('.',':')} WIB`;
-      }
-
       document.addEventListener('click',event => {
         const menuToggle = event.target.closest('.action-menu-toggle');
         const menuAction = event.target.closest('.action-menu-items button');
@@ -963,7 +957,6 @@
       window.addEventListener('drop',event => event.preventDefault());
 
       async function bootstrap() {
-        updateClock(); setInterval(updateClock,1000);
         try {
           database = await openDatabase();
           database.onversionchange = () => { database.close(); storageFallback(); };
