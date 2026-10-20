@@ -45,6 +45,9 @@
     @media(max-width:700px){.topbar-inner,.page-width{width:calc(100% - 16px)}}
     .month-strip{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));overflow:visible;gap:5px}.month-tab,.month-tab:first-child{min-width:0;flex:initial;padding:8px 3px}.table-wrap table{width:100%;min-width:0;table-layout:fixed}.table-wrap th{white-space:normal;overflow-wrap:anywhere}.table-wrap th:first-child{width:9%;padding-left:12px}.table-wrap th:nth-child(2){width:31%}.table-wrap th:nth-child(3){width:14%}.table-wrap th:nth-child(4){width:12%}.table-wrap th:nth-child(5){width:14%}.table-wrap th:last-child{width:20%;padding-right:12px}.table-wrap td{overflow-wrap:anywhere}.table-wrap .planned-date,.table-wrap .rescheduled-date,.row-actions .button{white-space:normal}.table-wrap .status-badge{white-space:nowrap;overflow-wrap:normal}
     @media(max-width:1150px){.month-strip{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0 12px;padding-bottom:14px}}
+    .agenda-panel{overflow:visible}.table-wrap{overflow:visible}.panel-footer{border-radius:0 0 var(--radius) var(--radius)}
+    .action-menu{position:relative}.action-menu[open]{z-index:40}.action-menu-toggle{list-style:none;width:42px;height:42px;border:1px solid var(--line);border-radius:8px;background:#fff;color:#596579;display:grid;place-items:center;cursor:pointer}.action-menu-toggle::-webkit-details-marker{display:none}.action-menu-toggle:hover,.action-menu[open]>.action-menu-toggle{background:#fff5f6;border-color:#f3c8cd;color:var(--red)}.action-menu-toggle:focus-visible{outline:3px solid #e3061340;outline-offset:3px}.action-menu-toggle svg{width:20px;height:20px}
+    .action-menu-items{position:absolute;z-index:30;top:calc(100% + 6px);right:0;min-width:190px;padding:6px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px #17243b24;display:grid;gap:2px}.action-menu.opens-up .action-menu-items{top:auto;bottom:calc(100% + 6px)}.action-menu-items button{width:100%;min-height:42px;padding:9px 11px;border:0;border-radius:7px;background:transparent;color:var(--ink);display:flex;align-items:center;gap:10px;text-align:left;white-space:nowrap;font:inherit;font-size:14px}.action-menu-items button:hover,.action-menu-items button:focus-visible{background:#f5f7fa}.action-menu-items button svg{width:17px;height:17px;color:#687589}.action-menu-items button.danger{color:#b72835}.action-menu-items button.danger svg{color:#b72835}.action-menu-items button.danger:hover,.action-menu-items button.danger:focus-visible{background:#fff1f2}
   </style>
 </head>
 <body>
@@ -339,9 +342,9 @@
 
       function actionButtons(activity) {
         const statusAction = activity.status === 'missed'
-          ? `<button type="button" class="button small reschedule-button" data-action="reschedule" data-id="${activity.id}" aria-label="Edit status ${escapeHTML(activity.name)}">${icon('rotate-cw')}Atur Ulang</button>`
-          : `<button type="button" class="button small" data-action="edit-status" data-id="${activity.id}" aria-label="Edit status ${escapeHTML(activity.name)}">${icon('pencil')}Edit Status</button>`;
-        return `<div class="row-actions"><button type="button" class="button small doc-button" data-action="documents" data-id="${activity.id}" aria-label="Lihat dokumen ${escapeHTML(activity.name)}">${icon('folder-open')}<span>Lihat Dokumen</span></button>${statusAction}<button type="button" class="delete-activity" data-action="delete" data-id="${activity.id}" aria-label="Hapus kegiatan ${escapeHTML(activity.name)}" title="Hapus kegiatan">${icon('trash-2')}</button></div>`;
+          ? `<button type="button" data-action="reschedule" data-id="${activity.id}">${icon('rotate-cw')}Atur ulang</button>`
+          : `<button type="button" data-action="edit-status" data-id="${activity.id}">${icon('pencil')}Edit status</button>`;
+        return `<div class="row-actions"><details class="action-menu"><summary class="action-menu-toggle" aria-label="Aksi untuk ${escapeHTML(activity.name)}" title="Aksi kegiatan">${icon('ellipsis')}</summary><div class="action-menu-items" aria-label="Aksi kegiatan"><button type="button" data-action="documents" data-id="${activity.id}">${icon('folder-open')}Lihat dokumen</button>${statusAction}<button type="button" class="danger" data-action="delete" data-id="${activity.id}">${icon('trash-2')}Hapus kegiatan</button></div></details></div>`;
       }
 
       function renderSchedule() {
@@ -869,6 +872,21 @@
       }
 
       document.addEventListener('click',event => {
+        const menuToggle = event.target.closest('.action-menu-toggle');
+        const menuAction = event.target.closest('.action-menu-items button');
+        document.querySelectorAll('.action-menu[open]').forEach(menu => {
+          if (!menu.contains(event.target) || menuAction || menuToggle && menu !== menuToggle.parentElement) menu.open = false;
+        });
+        if (menuToggle) {
+          const menu = menuToggle.parentElement;
+          requestAnimationFrame(() => {
+            if (!menu.open) return;
+            const menuHeight = menu.querySelector('.action-menu-items').offsetHeight;
+            const rect = menuToggle.getBoundingClientRect();
+            menu.classList.toggle('opens-up',window.innerHeight-rect.bottom < menuHeight+12 && rect.top > menuHeight+12);
+          });
+          return;
+        }
         const close = event.target.closest('[data-close]');
         if (close) { $(close.dataset.close).close(); return; }
         const month = event.target.closest('[data-month]');
