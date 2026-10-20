@@ -73,7 +73,7 @@
     </div>
 
     <section class="summary" aria-label="Ringkasan eksekutif">
-      <article class="summary-card"><div class="summary-card-top"><span class="summary-label">Tingkat kepatuhan</span><span class="metric-icon red"><i data-lucide="shield-check" aria-hidden="true"></i></span></div><div class="metric-value red"><span id="kpiCompliance">—</span><span class="metric-unit">%</span></div><div class="progress-line" role="progressbar" id="complianceProgress" aria-label="Tingkat kepatuhan" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="complianceFill"></span></div><p class="metric-caption" id="complianceCaption">Memuat ringkasan kegiatan</p></article>
+      <article class="summary-card"><div class="summary-card-top"><span class="summary-label">Total kegiatan tahunan</span><span class="metric-icon red"><i data-lucide="calendar-check" aria-hidden="true"></i></span></div><div class="metric-value red"><span id="kpiAnnual">—</span><span class="metric-unit">kegiatan</span></div><p class="metric-caption"><i data-lucide="calendar-days" aria-hidden="true"></i><span id="currentMonthCaption">Memuat agenda bulan berjalan</span></p></article>
       <article class="summary-card"><div class="summary-card-top"><span class="summary-label">Kegiatan selesai</span><span class="metric-icon green"><i data-lucide="circle-check" aria-hidden="true"></i></span></div><div class="metric-value"><span id="kpiCompleted">—</span><span class="metric-unit">kegiatan</span></div><p class="metric-caption"><i data-lucide="check-check" aria-hidden="true"></i>Telah terlaksana sesuai agenda</p></article>
       <article class="summary-card"><div class="summary-card-top"><span class="summary-label">Kegiatan terlewat</span><span class="metric-icon amber"><i data-lucide="calendar-x" aria-hidden="true"></i></span></div><div class="metric-value"><span id="kpiMissed">—</span><span class="metric-unit">kegiatan</span></div><p class="metric-caption missed-caption"><i data-lucide="triangle-alert" aria-hidden="true"></i>Perlu ditindaklanjuti</p></article>
       <article class="summary-card"><div class="summary-card-top"><span class="summary-label">Rescheduled</span><span class="metric-icon blue"><i data-lucide="calendar-clock" aria-hidden="true"></i></span></div><div class="metric-value"><span id="kpiRescheduled">—</span><span class="metric-unit">kegiatan</span></div><p class="metric-caption"><i data-lucide="rotate-cw" aria-hidden="true"></i>Sudah memiliki agenda baru</p></article>
@@ -306,19 +306,19 @@
       }
 
       function renderSummary() {
-        const annual = activities.filter(activity => activity.plannedDate.startsWith($('yearFilter').value));
+        const year = $('yearFilter').value;
+        const annual = activities.filter(activity => activity.plannedDate.startsWith(year));
+        const currentMonth = Number(new Intl.DateTimeFormat('en',{month:'numeric',timeZone:'Asia/Jakarta'}).format(new Date())) - 1;
+        const currentYear = new Intl.DateTimeFormat('en',{year:'numeric',timeZone:'Asia/Jakarta'}).format(new Date());
+        const monthCount = annual.filter(activity => Number(activity.plannedDate.slice(5,7))-1 === currentMonth).length;
         const completed = annual.filter(item => item.status === 'completed').length;
         const missed = annual.filter(item => item.status === 'missed').length;
         const rescheduled = annual.filter(item => item.status === 'rescheduled').length;
-        const due = annual.filter(item => item.status !== 'upcoming').length;
-        const compliance = due ? completed / due * 100 : 0;
+        $('kpiAnnual').textContent = annual.length;
+        $('currentMonthCaption').textContent = year === currentYear ? `${months[currentMonth]} · ${monthCount} kegiatan bulan ini` : `${months[currentMonth]} ${year} · ${monthCount} kegiatan`;
         $('kpiCompleted').textContent = completed;
         $('kpiMissed').textContent = missed;
         $('kpiRescheduled').textContent = rescheduled;
-        $('kpiCompliance').textContent = compliance.toLocaleString('id-ID',{minimumFractionDigits:1,maximumFractionDigits:1});
-        $('complianceFill').style.width = `${compliance}%`;
-        $('complianceProgress').setAttribute('aria-valuenow',compliance.toFixed(1));
-        $('complianceCaption').textContent = `${completed} dari ${due} agenda yang telah jatuh tempo`;
         $('activityCount').textContent = `${annual.length} kegiatan`;
         $('agendaYear').textContent = $('yearFilter').value;
         $('attentionBanner').hidden = missed === 0;
