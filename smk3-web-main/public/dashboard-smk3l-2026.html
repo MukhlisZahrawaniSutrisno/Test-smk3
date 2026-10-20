@@ -50,6 +50,23 @@
     .action-menu-items{position:absolute;z-index:30;top:calc(100% + 6px);right:0;min-width:190px;padding:6px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 32px #17243b24;display:grid;gap:2px}.action-menu.opens-up .action-menu-items{top:auto;bottom:calc(100% + 6px)}.action-menu-items button{width:100%;min-height:42px;padding:9px 11px;border:0;border-radius:7px;background:transparent;color:var(--ink);display:flex;align-items:center;gap:10px;text-align:left;white-space:nowrap;font:inherit;font-size:14px}.action-menu-items button:hover,.action-menu-items button:focus-visible{background:#f5f7fa}.action-menu-items button svg{width:17px;height:17px;color:#687589}.action-menu-items button.danger{color:#b72835}.action-menu-items button.danger svg{color:#b72835}.action-menu-items button.danger:hover,.action-menu-items button.danger:focus-visible{background:#fff1f2}
     .topbar-right{gap:0}.profile{padding-left:0;border-left:0}
   </style>
+  <style>
+    .document-layout{grid-template-columns:minmax(0,1fr)}
+    .documents-pane{padding:18px 26px 22px}
+    .documents-pane>.pane-title{margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+    .documents-pane>.pane-title h3{font-size:18px}
+    .documents-pane .template-documents{padding:12px 14px;margin:0 0 18px;border:1px solid var(--line);border-radius:9px;background:#fafbfc}
+    .documents-pane .template-documents .document-group-heading{margin-bottom:4px}
+    .documents-pane .template-documents .document-group-heading h4,.documents-pane>.document-group-heading h4{font-size:16px}
+    .documents-pane .template-documents .document-help{margin:0;font-size:14px}
+    .documents-pane .template-upload-label{width:auto;min-height:36px;margin:10px 0 0;padding:7px 11px;font-size:14px}
+    .documents-pane>.document-group-heading{margin:0 0 8px}
+    .documents-pane .upload-zone{min-height:76px;margin:0 0 14px;padding:12px;flex-direction:row;gap:10px;text-align:left}
+    .documents-pane .upload-icon{width:34px;height:34px;margin:0;flex-shrink:0}
+    .documents-pane .upload-zone small{margin:0 0 0 auto;text-align:right}
+    .documents-pane .document-help{margin-top:8px}
+    @media(max-width:640px){.documents-pane{padding:16px}.documents-pane .upload-zone{flex-wrap:wrap;justify-content:flex-start}.documents-pane .upload-zone small{flex-basis:100%;margin-left:44px;text-align:left}}
+  </style>
 </head>
 <body>
   <header class="topbar">
@@ -135,7 +152,7 @@
     <div class="document-layout">
       <section class="merger-pane" aria-labelledby="mergerTitle"><div class="merger-icon"><i data-lucide="combine" aria-hidden="true"></i></div><h3 id="mergerTitle">Gabungkan PDF</h3><p class="merger-description">Area khusus untuk menggabungkan dua PDF. Pilih PDF dari daftar berkas kegiatan di bawah atau tambahkan PDF khusus untuk penggabungan.</p><div class="selection-summary"><div class="selection-top"><span>PDF yang dipilih</span><strong id="selectionCount">0 / 2</strong></div><div id="selectedPdfList"></div></div><label class="upload-pdf" for="pdfUpload" tabindex="0"><i data-lucide="plus" aria-hidden="true"></i>Pilih PDF untuk penggabungan</label><input id="pdfUpload" class="sr-only" type="file" accept=".pdf,application/pdf" multiple tabindex="-1"><div class="form-group"><label for="mergeName">Nama file hasil gabungan</label><input id="mergeName" type="text" maxlength="120" placeholder="Dokumen-SMK3L-2026.pdf" value="Dokumen-SMK3L-2026.pdf" spellcheck="false"></div><button type="button" id="mergeButton" class="button primary merge-submit" disabled><i data-lucide="combine" aria-hidden="true"></i>Gabungkan PDF</button><div id="mergeStatus" class="merge-status" role="status" aria-live="polite"></div><div class="merge-progress" id="mergeProgress" role="progressbar" aria-label="Proses penggabungan PDF" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span id="mergeProgressFill"></span></div><div id="mergeResult" hidden></div><p class="merge-notice"><i data-lucide="shield-check" aria-hidden="true"></i><span>Penggabungan diproses pada perangkat Anda. Berkas tidak diunggah ke server.</span></p></section>
       <section class="documents-pane" aria-labelledby="documentListTitle">
-        <div class="pane-title"><h3 id="documentListTitle">Berkas terlampir</h3><small id="documentCount">0 berkas</small></div>
+        <div class="pane-title"><h3 id="documentListTitle">Kelola bukti</h3><small id="documentCount">0 berkas</small></div>
         <section class="template-documents" aria-labelledby="templateDocumentTitle"><div class="document-group-heading"><h4 id="templateDocumentTitle">Template dokumen</h4><span id="templateDocumentCount">0 template</span></div><p class="document-help">Simpan template milik Anda di sini. Gunakan Unduh untuk mengambil file aslinya.</p><label class="upload-pdf template-upload-label" for="templateDocumentUpload" tabindex="0"><i data-lucide="file-up" aria-hidden="true"></i>Unggah template</label><input id="templateDocumentUpload" class="sr-only" type="file" accept=".pdf,.docx,.jpg,.jpeg,.png" multiple tabindex="-1"><div id="templateDocumentList"></div></section>
         <div class="document-group-heading"><h4>Dokumen upload</h4><span id="uploadedDocumentCount">0 berkas</span></div><label class="upload-zone" id="uploadZone" for="documentUpload" tabindex="0"><span class="upload-icon"><i data-lucide="cloud-upload" aria-hidden="true"></i></span><strong>Tarik berkas ke sini atau <em>pilih berkas</em></strong><small>PDF, DOCX, JPG, PNG · Maks. 20 MB per berkas</small></label><input id="documentUpload" class="sr-only" type="file" accept=".pdf,.docx,.jpg,.jpeg,.png" multiple tabindex="-1"><div id="documentList"></div><p class="document-help">Untuk menggabungkan, pilih dua PDF di atas sesuai urutan yang diinginkan.</p>
       </section>
