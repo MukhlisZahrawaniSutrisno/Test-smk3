@@ -1,0 +1,385 @@
+'use client'
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  FileText,
+  FolderOpen,
+  Users,
+  Ambulance,
+  Printer,
+  Archive,
+  Activity,
+  FolderArchive,
+  FileCheck,
+  BookOpen,
+  X,
+  Menu,
+} from "lucide-react";
+
+interface AdminSidebarProps {
+  userRole: string;
+  openAuditsCount: number;
+  incidentsCount: number;
+  isCollapsed: boolean;
+  isMobileOpen: boolean;
+  setIsMobileOpen: (val: boolean) => void;
+  setIsCollapsed: (val: boolean) => void;
+}
+
+export default function AdminSidebar({
+  userRole,
+  openAuditsCount,
+  incidentsCount,
+  isCollapsed,
+  isMobileOpen,
+  setIsMobileOpen,
+  setIsCollapsed,
+}: AdminSidebarProps) {
+  const pathname = usePathname();
+
+  const handleLinkClick = () => {
+    if (isMobileOpen) {
+      setIsMobileOpen(false);
+    }
+  };
+
+  const checkActive = (href: string) => {
+    return pathname.startsWith(href);
+  };
+
+  return (
+    <aside
+      className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-all duration-300 shadow-xl lg:translate-x-0 ${
+        isCollapsed ? "lg:w-20" : "lg:w-64"
+      } ${isMobileOpen ? "translate-x-0 w-64" : "-translate-x-full"}`}
+    >
+      {/* --- HEADER SIDEBAR --- */}
+      <div className="h-16 bg-gradient-to-r from-red-800 to-red-700 flex items-center justify-between px-4 relative shadow-md z-20 shrink-0 border-b border-red-900/20">
+        {!isCollapsed || isMobileOpen ? (
+          <>
+            <img
+              src="/Telkom-logo-full.png"
+              alt="Telkom Indonesia"
+              className="h-9 w-auto object-contain filter drop-shadow-sm"
+            />
+            <button
+              onClick={() => setIsCollapsed(!isCollapsed)}
+              className="hidden lg:flex text-red-100 hover:text-white hover:bg-white/10 p-1.5 rounded-lg transition-all"
+              title="Kecilkan Menu"
+            >
+              <Menu size={19} />
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="hidden lg:flex mx-auto text-red-100 hover:text-white hover:bg-white/10 p-2 rounded-xl transition-all"
+            title="Buka Menu"
+          >
+            <Menu size={20} />
+          </button>
+        )}
+
+        {/* Mobile close button */}
+        {isMobileOpen && (
+          <button
+            onClick={() => setIsMobileOpen(false)}
+            className="lg:hidden text-white/80 hover:text-white p-1.5 hover:bg-white/10 rounded-lg transition"
+          >
+            <X size={20} />
+          </button>
+        )}
+      </div>
+
+      {/* --- MENU NAVIGASI --- */}
+      <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto custom-scrollbar">
+        {(!isCollapsed || isMobileOpen) && (
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-3">
+            Main Menu
+          </div>
+        )}
+
+        {/* Dashboard Link */}
+        <Link
+          href="/admin/dashboard"
+          onClick={handleLinkClick}
+          title="Dashboard"
+          className={`flex items-center gap-3 p-3 rounded-xl transition-all group font-medium ${
+            isCollapsed && !isMobileOpen ? "justify-center" : "justify-start"
+          } ${
+            checkActive("/admin/dashboard")
+              ? "bg-red-50 text-red-600 border border-red-100 shadow-sm dark:bg-red-950/30 dark:text-red-400 dark:border-red-950/50"
+              : "text-slate-600 dark:text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-slate-800 dark:hover:text-white"
+          }`}
+        >
+          <div className="w-5 h-5 flex items-center justify-center shrink-0 relative">
+            <LayoutDashboard
+              size={20}
+              className={checkActive("/admin/dashboard") || checkActive("/admin/ibpr") || checkActive("/admin/monitoring") || checkActive("/admin/audit") || checkActive("/admin/kecelakaan") || checkActive("/admin/archive") || checkActive("/admin/document-tools") || checkActive("/admin/users") || checkActive("/admin/surat") ? "text-red-600 dark:text-red-400" : "text-slate-400 group-hover:text-red-600 dark:group-hover:text-white transition-colors"}
+            />
+          </div>
+          {(!isCollapsed || isMobileOpen) && <span>Dashboard</span>}
+        </Link>
+
+        {/* Dokumen IBPR Link */}
+        <Link
+          href="/admin/ibpr"
+          onClick={handleLinkClick}
+          title="Dokumen IBPR"
+          className={`flex items-center gap-3 p-3 rounded-xl transition-all group font-medium ${
+            isCollapsed && !isMobileOpen ? "justify-center" : "justify-start"
+          } ${
+            checkActive("/admin/ibpr")
+              ? "bg-red-50 text-red-600 border border-red-100 shadow-sm dark:bg-red-950/30 dark:text-red-400 dark:border-red-950/50"
+              : "text-slate-600 dark:text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-slate-800 dark:hover:text-white"
+          }`}
+        >
+          <div className="w-5 h-5 flex items-center justify-center shrink-0 relative">
+            <FolderOpen
+              size={20}
+              className={checkActive("/admin/ibpr") ? "text-red-600 dark:text-red-400" : "text-slate-400 group-hover:text-red-600 dark:group-hover:text-white transition-colors"}
+            />
+          </div>
+          {(!isCollapsed || isMobileOpen) && <span>Dokumen IBPR</span>}
+        </Link>
+
+        {/* Monitoring Jam Kerja Link */}
+        <Link
+          href="/admin/monitoring"
+          onClick={handleLinkClick}
+          title="Monitoring Jam Kerja"
+          className={`flex items-center gap-3 p-3 rounded-xl transition-all group font-medium ${
+            isCollapsed && !isMobileOpen ? "justify-center" : "justify-start"
+          } ${
+            checkActive("/admin/monitoring")
+              ? "bg-red-50 text-red-600 border border-red-100 shadow-sm dark:bg-red-950/30 dark:text-red-400 dark:border-red-950/50"
+              : "text-slate-600 dark:text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-slate-800 dark:hover:text-white"
+          }`}
+        >
+          <div className="w-5 h-5 flex items-center justify-center shrink-0 relative">
+            <Activity
+              size={20}
+              className={checkActive("/admin/monitoring") ? "text-red-600 dark:text-red-400" : "text-slate-400 group-hover:text-red-600 dark:group-hover:text-white transition-colors"}
+            />
+          </div>
+          {(!isCollapsed || isMobileOpen) && <span>Monitoring Jam Kerja</span>}
+        </Link>
+
+        {/* Data Audit Link */}
+        <Link
+          href="/admin/audit"
+          onClick={handleLinkClick}
+          title="Data Audit"
+          className={`flex items-center gap-3 p-3 rounded-xl transition-all group font-medium ${
+            isCollapsed && !isMobileOpen ? "justify-center" : "justify-start"
+          } ${
+            checkActive("/admin/audit")
+              ? "bg-red-50 text-red-600 border border-red-100 shadow-sm dark:bg-red-950/30 dark:text-red-400 dark:border-red-950/50"
+              : "text-slate-600 dark:text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-slate-800 dark:hover:text-white"
+          }`}
+        >
+          <div className="w-5 h-5 flex items-center justify-center shrink-0 relative">
+            <FileText
+              size={20}
+              className={checkActive("/admin/audit") ? "text-red-600 dark:text-red-400" : "text-slate-400 group-hover:text-red-600 dark:group-hover:text-white transition-colors"}
+            />
+            {openAuditsCount > 0 && isCollapsed && !isMobileOpen && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+            )}
+          </div>
+          {(!isCollapsed || isMobileOpen) && (
+            <>
+              <span className="flex-1">Data Audit</span>
+              {openAuditsCount > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                  {openAuditsCount}
+                </span>
+              )}
+            </>
+          )}
+        </Link>
+
+        {/* Laporan Insiden Link */}
+        <Link
+          href="/admin/kecelakaan"
+          onClick={handleLinkClick}
+          title="Laporan Insiden"
+          className={`flex items-center gap-3 p-3 rounded-xl transition-all group font-medium ${
+            isCollapsed && !isMobileOpen ? "justify-center" : "justify-start"
+          } ${
+            checkActive("/admin/kecelakaan")
+              ? "bg-red-50 text-red-600 border border-red-100 shadow-sm dark:bg-red-950/30 dark:text-red-400 dark:border-red-950/50"
+              : "text-slate-600 dark:text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-slate-800 dark:hover:text-white"
+          }`}
+        >
+          <div className="w-5 h-5 flex items-center justify-center shrink-0 relative">
+            <Ambulance
+              size={20}
+              className={checkActive("/admin/kecelakaan") ? "text-red-600 dark:text-red-400" : "text-slate-400 group-hover:text-red-600 dark:group-hover:text-white transition-colors"}
+            />
+            {incidentsCount > 0 && isCollapsed && !isMobileOpen && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+            )}
+          </div>
+          {(!isCollapsed || isMobileOpen) && (
+            <>
+              <span className="flex-1">Laporan Insiden</span>
+              {incidentsCount > 0 && (
+                <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                  {incidentsCount}
+                </span>
+              )}
+            </>
+          )}
+        </Link>
+
+        {/* Arsip Dokumen Link */}
+        <Link
+          href="/admin/archive"
+          onClick={handleLinkClick}
+          title="Arsip Dokumen"
+          className={`flex items-center gap-3 p-3 rounded-xl transition-all group font-medium ${
+            isCollapsed && !isMobileOpen ? "justify-center" : "justify-start"
+          } ${
+            checkActive("/admin/archive")
+              ? "bg-red-50 text-red-600 border border-red-100 shadow-sm dark:bg-red-950/30 dark:text-red-400 dark:border-red-950/50"
+              : "text-slate-600 dark:text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-slate-800 dark:hover:text-white"
+          }`}
+        >
+          <div className="w-5 h-5 flex items-center justify-center shrink-0 relative">
+            <FolderArchive
+              size={20}
+              className={checkActive("/admin/archive") ? "text-red-600 dark:text-red-400" : "text-slate-400 group-hover:text-red-600 dark:group-hover:text-white transition-colors"}
+            />
+          </div>
+          {(!isCollapsed || isMobileOpen) && <span>Arsip Dokumen</span>}
+        </Link>
+
+        {/* Upload Evidence SMK3 Link */}
+        <Link
+          href="/admin/evidence"
+          onClick={handleLinkClick}
+          title="Evidence SMK3"
+          className={`flex items-center gap-3 p-3 rounded-xl transition-all group font-medium ${
+            isCollapsed && !isMobileOpen ? "justify-center" : "justify-start"
+          } ${
+            checkActive("/admin/evidence")
+              ? "bg-red-50 text-red-600 border border-red-100 shadow-sm dark:bg-red-950/30 dark:text-red-400 dark:border-red-950/50"
+              : "text-slate-600 dark:text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-slate-800 dark:hover:text-white"
+          }`}
+        >
+          <div className="w-5 h-5 flex items-center justify-center shrink-0 relative">
+            <FileCheck
+              size={20}
+              className={checkActive("/admin/evidence") ? "text-red-600 dark:text-red-400" : "text-slate-400 group-hover:text-red-600 dark:group-hover:text-white transition-colors"}
+            />
+          </div>
+          {(!isCollapsed || isMobileOpen) && <span>Evidence SMK3</span>}
+        </Link>
+
+        {/* Referensi Kriteria SMK3 Link */}
+        <Link
+          href="/admin/kriteria-referensi"
+          onClick={handleLinkClick}
+          title="Referensi Kriteria"
+          className={`flex items-center gap-3 p-3 rounded-xl transition-all group font-medium ${
+            isCollapsed && !isMobileOpen ? "justify-center" : "justify-start"
+          } ${
+            checkActive("/admin/kriteria-referensi")
+              ? "bg-red-50 text-red-600 border border-red-100 shadow-sm dark:bg-red-950/30 dark:text-red-400 dark:border-red-950/50"
+              : "text-slate-600 dark:text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-slate-800 dark:hover:text-white"
+          }`}
+        >
+          <div className="w-5 h-5 flex items-center justify-center shrink-0 relative">
+            <BookOpen
+              size={20}
+              className={checkActive("/admin/kriteria-referensi") ? "text-red-600 dark:text-red-400" : "text-slate-400 group-hover:text-red-600 dark:group-hover:text-white transition-colors"}
+            />
+          </div>
+          {(!isCollapsed || isMobileOpen) && <span>Referensi Kriteria</span>}
+        </Link>
+
+        {/* Administrator Section */}
+        {userRole === "ADMIN" && (
+          <>
+            <div className="my-4 border-t border-slate-100 dark:border-slate-800"></div>
+            {(!isCollapsed || isMobileOpen) && (
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 ml-3">
+                Administrator
+              </div>
+            )}
+
+            {/* Data Pengguna Link */}
+            <Link
+              href="/admin/users"
+              onClick={handleLinkClick}
+              title="Data Pengguna"
+              className={`flex items-center gap-3 p-3 rounded-xl transition-all group font-medium ${
+                isCollapsed && !isMobileOpen ? "justify-center" : "justify-start"
+              } ${
+                checkActive("/admin/users")
+                  ? "bg-red-50 text-red-600 border border-red-100 shadow-sm dark:bg-red-950/30 dark:text-red-400 dark:border-red-950/50"
+                  : "text-slate-600 dark:text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-slate-800 dark:hover:text-white"
+              }`}
+            >
+              <div className="w-5 h-5 flex items-center justify-center shrink-0 relative">
+                <Users
+                  size={20}
+                  className={checkActive("/admin/users") ? "text-red-600 dark:text-red-400" : "text-slate-400 group-hover:text-red-600 dark:group-hover:text-white transition-colors"}
+                />
+              </div>
+              {(!isCollapsed || isMobileOpen) && <span>Data Pengguna</span>}
+            </Link>
+
+            {/* Buat Surat Link */}
+            <Link
+              href="/admin/surat"
+              onClick={handleLinkClick}
+              title="Buat Surat"
+              className={`flex items-center gap-3 p-3 rounded-xl transition-all group font-medium ${
+                isCollapsed && !isMobileOpen ? "justify-center" : "justify-start"
+              } ${
+                checkActive("/admin/surat")
+                  ? "bg-red-50 text-red-600 border border-red-100 shadow-sm dark:bg-red-950/30 dark:text-red-400 dark:border-red-950/50"
+                  : "text-slate-600 dark:text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-slate-800 dark:hover:text-white"
+              }`}
+            >
+              <div className="w-5 h-5 flex items-center justify-center shrink-0 relative">
+                <Printer
+                  size={20}
+                  className={checkActive("/admin/surat") ? "text-red-600 dark:text-red-400" : "text-slate-400 group-hover:text-red-600 dark:group-hover:text-white transition-colors"}
+                />
+              </div>
+              {(!isCollapsed || isMobileOpen) && <span>Buat Surat</span>}
+            </Link>
+
+            {/* Arsip Surat Link */}
+            <Link
+              href="/admin/arsip"
+              onClick={handleLinkClick}
+              title="Arsip Surat"
+              className={`flex items-center gap-3 p-3 rounded-xl transition-all group font-medium ${
+                isCollapsed && !isMobileOpen ? "justify-center" : "justify-start"
+              } ${
+                checkActive("/admin/arsip")
+                  ? "bg-blue-50 text-blue-600 border border-blue-100 shadow-sm dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-950/50"
+                  : "text-slate-600 dark:text-slate-400 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-slate-800 dark:hover:text-white"
+              }`}
+            >
+              <div className="w-5 h-5 flex items-center justify-center shrink-0 relative">
+                <Archive
+                  size={20}
+                  className={checkActive("/admin/arsip") ? "text-blue-600 dark:text-blue-400" : "text-slate-400 group-hover:text-blue-600 dark:group-hover:text-white transition-colors"}
+                />
+              </div>
+              {(!isCollapsed || isMobileOpen) && <span>Arsip Surat</span>}
+            </Link>
+          </>
+        )}
+      </nav>
+
+    </aside>
+  );
+}

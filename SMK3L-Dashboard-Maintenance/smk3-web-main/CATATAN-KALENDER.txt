@@ -1,0 +1,34 @@
+KALENDER AGENDA KESELAMATAN SMK3L
+
+File utama: public/dashboard-smk3l-2026.html
+Bahasa: HTML, CSS, JavaScript. Kalender tidak memerlukan library tambahan.
+
+Kalender menampilkan satu bulan dalam susunan Senin sampai Minggu.
+Panah dan pilihan bulan dipakai untuk berpindah bulan; isian Tahun tetap tersedia.
+Klik tanggal untuk melihat kegiatan, dokumen, serta tombol edit dan hapus pada hari itu.
+Tambah kegiatan dari panel harian otomatis mengisi tanggal yang dipilih.
+Bulan ini kembali ke bulan/tahun berjalan menurut zona waktu Asia/Jakarta.
+Semua tanggal bulan ini membatalkan pemilihan tanggal tertentu.
+Semua agenda tahunan menampilkan daftar seluruh kegiatan pada tahun terpilih.
+Pencarian dan filter status berlaku pada kalender, panel harian, dan daftar kegiatan.
+
+Tanggal tampilan memakai rescheduledDate untuk status rescheduled;
+status lainnya memakai plannedDate. Tanggal rencana asli tetap tersimpan
+dan tetap terlihat di detail serta kolom Tanggal rencana.
+Perubahan kalender tidak memigrasikan atau menimpa data kegiatan/dokumen.
+
+Fungsi penting di HTML:
+- calendarDays: menghitung tanggal dan padding kalender, termasuk tahun kabisat.
+- activityCalendarDate: menentukan tanggal kegiatan yang ditampilkan.
+- renderMonths: menggambar kalender (nama fungsi lama tetap dipakai).
+- openCalendarDay / renderCalendarDayDetails: membuka dan mengisi panel harian.
+- moveCalendarMonth: berpindah bulan, termasuk pergantian tahun.
+- selectedDate / selectedMonth / calendarMonth: state tampilan dan filter.
+- actionButtons: tombol Atur ulang (status Terlewat) atau Edit, serta Hapus.
+  Kedua tombol ditampilkan terpisah per kegiatan, tanpa menu titik tiga.
+  Ikon tombol dibuat dengan SVG lokal agar tetap tampil tanpa CDN.
+
+Tes tanggal: tests/dashboard-calendar.test.ts (TypeScript, npm.cmd test).
+Uji browser: node scripts/verify-document-preview.mjs.
+Uji browser juga memeriksa dokumen, edit, hapus tanpa konfirmasi penghapusan,
+prefill tanggal, keyboard, pergantian tahun, tampilan ponsel, dan keutuhan data.

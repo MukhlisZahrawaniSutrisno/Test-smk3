@@ -1,0 +1,47 @@
+version: "3.8"
+name: smk3-monitoring
+
+services:
+  app:
+    container_name: smk3-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      # Port aplikasi (bisa diubah via PORT_BIND di .env, default 3065)
+      - "${PORT_BIND:-3065}:3000"
+    environment:
+      # Konfigurasi Database:
+      # - Jika dijalankan di LAPTOP: otomatis menggunakan host.docker.internal ke PostgreSQL laptop
+      # - Jika di SERVER: buat file .env di server dan isi DATABASE_URL sesuai database server
+      DATABASE_URL: ${DATABASE_URL:?Isi DATABASE_URL di file .env}
+      AUTH_SECRET: ${AUTH_SECRET:?Isi AUTH_SECRET di file .env}
+      BLOB_READ_WRITE_TOKEN: ${BLOB_READ_WRITE_TOKEN:-}
+
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3065}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-}
+      NODE_ENV: production
+      CRON_SECRET: ${CRON_SECRET:-}
+      APAR_EMAIL_TO: ${APAR_EMAIL_TO:-}
+      WA_PROVIDER: ${WA_PROVIDER:-FONNTE}
+      WA_API_TOKEN: ${WA_API_TOKEN:-}
+      WA_GATEWAY_URL: ${WA_GATEWAY_URL:-}
+      WA_META_PHONE_NUMBER_ID: ${WA_META_PHONE_NUMBER_ID:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+
+    volumes:
+      # VOLUME PERSISTENCE:
+      # Path './public/uploads' bersifat RELATIF terhadap folder proyek:
+      # - Di LAPTOP: berkas masuk ke folder ./public/uploads di laptop Anda.
+      # - Di SERVER: berkas otomatis masuk ke folder ./public/uploads di server Anda.
+      # Berkas tidak akan terhapus meskipun container dimatikan atau di-deploy ulang.
+      - ./public/uploads:/app/public/uploads
+
+    # Mendukung 'host.docker.internal' baik di Windows/Mac maupun Linux server
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

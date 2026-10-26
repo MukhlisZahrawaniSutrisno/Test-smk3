@@ -1,0 +1,360 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// 1. MANAJEMEN USER (SDM K3)
+// ==========================================
+model User {
+  id                String              @id @default(cuid())
+  email             String              @unique
+  name              String?
+  role              Role                @default(PEGAWAI)
+  password          String
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  temuanAudit       TemuanAudit[]
+  laporanKecelakaan LaporanKecelakaan[]
+  aparAssets        Apar[]
+}
+
+enum Role {
+  ADMIN
+  AUDITOR
+  PEGAWAI
+}
+
+
+
+// ==========================================
+// 3. AUDIT SMK3 & TEMUAN (LAPOR AUDIT)
+// ==========================================
+model TemuanAudit {
+  id           String         @id @default(uuid())
+  judul        String
+  deskripsi    String
+  lokasi       String
+  kategori     KategoriTemuan @default(MINOR) // Default MINOR
+  buktiFoto    String?
+  status       StatusTemuan   @default(OPEN)
+  
+  // Update: Deadline jadi opsional (Diisi Admin nanti)
+  deadline     DateTime?      
+  
+  // Update: Tambah Waktu Temuan Manual (Inputan Pegawai)
+  waktuTemuan  DateTime       @default(now()) 
+
+  // Update: Auditor/Pelapor jadi opsional (Biar pegawai bisa lapor tanpa login ribet)
+  auditorId    String?
+  auditor      User?          @relation(fields: [auditorId], references: [id])
+  
+  kondisi      Kondisi        @default(BUTUH_PERBAIKAN)
+  
+  createdAt    DateTime       @default(now())
+}
+
+enum KategoriTemuan {
+  KRITIKAL
+  MAYOR
+  MINOR
+}
+
+enum Kondisi {
+  AMAN
+  BUTUH_PERBAIKAN
+}
+
+enum StatusTemuan {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+// ==========================================
+// 4. PELAPORAN KECELAKAAN (INSIDEN)
+// ==========================================
+model LaporanKecelakaan {
+  id            String   @id @default(uuid())
+  judul         String   // Judul Insiden
+  lokasi        String
+  waktuKejadian DateTime // Wajib isi jam & tanggal kejadian
+  kronologi     String   @db.Text
+  korban        String?  // Nama korban (opsional)
+  fotoBukti     String?  // Foto kondisi (opsional)
+  status        String   @default("OPEN") // OPEN, INVESTIGASI, CLOSED
+  
+  // Pelapor jadi opsional
+  pelaporId     String?
+  pelapor       User?    @relation(fields: [pelaporId], references: [id])
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ==========================================
+// 5. MONITORING LAPORAN BULANAN
+// ==========================================
+model Witel {
+  id      Int       @id @default(autoincrement())
+  nama    String
+  laporan Laporan[]
+}
+
+model Laporan {
+  id         Int      @id @default(autoincrement())
+  witelId    Int
+  bulanIndex Int      // 0 = Jan, 1 = Feb, dst
+  tahun      Int
+  status     Int      // 1 = Ada, 2 = Telat
+  fileName   String
+  fileUrl    String
+  uploadedAt DateTime @default(now())
+
+  witel      Witel    @relation(fields: [witelId], references: [id])
+
+  @@unique([witelId, bulanIndex, tahun])
+}
+
+// ==========================================
+// 6. ARSIP SURAT
+// ==========================================
+model ArsipSurat {
+  id        String   @id @default(cuid())
+  nomor     String
+  perihal   String
+  type      String   // "UNDANGAN" | "LAPORAN"
+  data      Json     // Stores flexible content (kepada, dari, body, etc.)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ==========================================
+// 7. IBPR (Identifikasi Bahaya & Pengendalian Risiko)
+// ==========================================
+model Ibpr {
+  id          String   @id @default(cuid())
+  lokasi      String
+  aktivitas   String
+  bahaya      String
+  peluang     String
+  penanganan  String
+  fotoRuangan String?  // URL Foto Ruangan
+  dokumenIbpr String?  // URL Dokumen PDF
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ==========================================
+// 8. ARSIP DOKUMEN (Digitalisasi Dokumen Fisik)
+// ==========================================
+model DocumentArchive {
+  id             String   @id @default(cuid())
+  documentNumber String?
+  title          String
+  documentType   String
+  documentDate   DateTime
+  division       String   @default("General Support")
+  digitalStatus  String   // "Sudah Digital" | "Belum Digital"
+  filePath       String?  // Path file scan (PDF, JPG, PNG)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ==========================================
+// 9. EVIDENCE SMK3 (Tracker & Dokumen TTD)
+// ==========================================
+model EvidenceSmk3 {
+  id          String   @id @default(cuid())
+  itemCode    String   // Misal: "M.00/UM410/TR3-00000000/2026", "LP.00.00.01", "FM 02 00 01"
+  area        String   // "-TELKOM REGIONAL-III", "WITEL BANDUNG", dll.
+  periode     Int      // 2026, 2025, dst.
+  fileName    String   // Nama berkas upload
+  filePath    String   // Path URL file di server (/uploads/evidence/...)
+  keterangan  String?  // Catatan opsional
+  uploadedBy  String?  // Nama user pengunggah
+  uploadedAt  DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([itemCode, area, periode])
+}
+
+// ==========================================
+// 10. DOKUMEN REFERENSI KRITERIA SMK3
+// ==========================================
+model KriteriaReferenceDoc {
+  id          String   @id @default(cuid())
+  kriteriaNo  String   @unique // Misal: "1.2.5"
+  docNumber   String   // Misal: "P.19/UM410/COP-M3000000/2024"
+  docTitle    String?  // Judul/Nama Dokumen
+  filePath    String?  // Path file PDF yang diunggah
+  fileName    String?  // Nama file asli
+  keterangan  String?  // Catatan keterangan
+  updatedBy   String?  // Nama user yang mengunggah/mengubah
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ==========================================
+// 11. MANAJEMEN ASET APAR & PERINGATAN KEDALUWARSA
+// ==========================================
+
+enum AparStatus {
+  ACTIVE           // Beroperasi normal
+  IN_MAINTENANCE   // Sedang dicek/servis
+  REFILLED         // Baru diisi ulang (siap aktivasi kembali)
+  DISPOSED         // Rusak / Dihapuskan
+}
+
+enum AparWarningStage {
+  NORMAL
+  INFO_60
+  WARNING_30
+  URGENT_7
+  CRITICAL_1
+}
+
+enum NotificationStage {
+  STAGE_60_INFO
+  STAGE_30_WARNING
+  STAGE_7_URGENT
+  STAGE_1_WHATSAPP
+}
+
+enum NotificationChannel {
+  BELL_NOTIFICATION
+  DASHBOARD_BANNER
+  MODAL_POPUP
+  WHATSAPP_GATEWAY
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model Apar {
+  id                  String             @id @default(cuid())
+  kodeApar            String             @unique // Contoh: "APAR-LT02-001"
+  tipeMedia           String             @default("")
+  kapasitasKg         Float              @default(0)
+  lokasi              String             @map("lokasiGedung")
+  lokasiLantaiRuang   String             @default("")
+  
+  tanggalProduksi     DateTime?          @db.Date
+  tanggalRefillAkhir  DateTime           @default(now()) @db.Date
+  tanggalExpired     DateTime           @map("tanggalKedaluwarsa") @db.Date
+  
+  status              AparStatus         @default(ACTIVE)
+  currentStage        AparWarningStage   @default(NORMAL)
+  
+  // Flag agar pop-up modal merah wajib dikonfirmasi saat PIC login
+  isModalAcknowledged Boolean            @default(false)
+  
+  // PIC (Person In Charge) K3
+  picId               String?
+  picUser             User?              @relation(fields: [picId], references: [id], onDelete: SetNull)
+  picNamaManual       String?            // Fallback jika PIC bukan user sistem
+  picNomorWa          String             @default("")
+
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  notificationLogs    NotificationLog[]
+  notifikasi          NotifikasiApar[]
+
+  @@index([status, tanggalExpired], map: "AparAsset_status_tanggalKedaluwarsa_idx")
+  @@index([currentStage])
+  @@map("AparAsset")
+}
+
+model NotificationLog {
+  id                  String              @id @default(cuid())
+  aparId              String
+  apar                Apar                @relation(fields: [aparId], references: [id], onDelete: Cascade)
+  
+  stage               NotificationStage
+  channel             NotificationChannel
+  recipient           String              // User ID, Email, atau No. WhatsApp
+  title               String
+  message             String              @db.Text
+  status              NotificationStatus  @default(PENDING)
+  
+  // Snapshot tanggal expired saat notif dibuat (kunci anti-duplikasi per siklus)
+  expiredDateSnapshot DateTime            @db.Date
+  
+  // Respon payload gateway pihak ketiga (untuk debugging & audit)
+  rawResponse         Json?
+  errorMessage        String?             @db.Text
+  sentAt              DateTime            @default(now())
+
+  // KUNCI ANTI-DUPLIKASI (Constraint Unik)
+  @@unique([aparId, stage, expiredDateSnapshot], name: "uniq_apar_stage_cycle")
+  @@index([recipient, status])
+  @@index([sentAt])
+}
+
+enum TipeNotifikasiApar {
+  WEB_WARNING
+  WA_EXPIRED
+  EMAIL_EXPIRED
+}
+
+model NotifikasiApar {
+  id                     String               @id @default(cuid())
+  aparId                 String
+  apar                   Apar                 @relation(fields: [aparId], references: [id], onDelete: Cascade)
+  tipe                   TipeNotifikasiApar
+  pesan                  String               @db.Text
+  terkirimAt             DateTime             @default(now())
+  tanggalExpiredSnapshot DateTime             @db.Date
+  createdAt              DateTime             @default(now())
+
+  @@unique([aparId, tipe, tanggalExpiredSnapshot])
+  @@index([tipe, terkirimAt])
+}
+
+model DashboardActivityDocument {
+  id             String   @id @default(cuid())
+  activityId     String
+  name           String
+  kind           String
+  source         String   @default("Unggahan")
+  blobPathname   String   @unique
+  size           Int
+  pages          Int      @default(0)
+  uploadedById   String
+  uploadedByName String?
+  createdAt      DateTime @default(now())
+
+  @@index([activityId, createdAt])
+}
+
+model DashboardActivity {
+  id                 String    @id
+  name               String
+  description        String
+  category           String    @default("")
+  owner              String
+  reference          String
+  status             String
+  reason             String    @default("")
+  plannedDate        DateTime  @db.Date
+  plannedEndDate     DateTime  @db.Date
+  rescheduledDate    DateTime? @db.Date
+  rescheduledEndDate DateTime? @db.Date
+  version            Int       @default(1)
+  createdById        String
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  deletedAt          DateTime?
+
+  @@index([deletedAt, plannedDate])
+}

@@ -1,0 +1,20 @@
+SMK3L DASHBOARD MAINTENANCE — v7.0
+Pembaruan: 26 Oktober 2026
+
+BARU: Rentang Waktu Kegiatan pada kalender yang sudah ada.
+- Tanggal Mulai dan Tanggal Selesai pada tambah/edit/jadwal ulang.
+- Durasi dihitung inklusif; akhir tidak boleh sebelum mulai.
+- Bar kegiatan tersambung antarhari, berlanjut lintas minggu/bulan.
+- Pencarian, status, navigasi, jumlah kegiatan unik tetap berfungsi.
+- Jadwal tersimpan di PostgreSQL untuk pengguna yang login.
+- Kompatibel dengan agenda satu hari dan ID dokumen yang lama.
+- Lonceng tanpa suara dan latar logo Telkom tetap dipertahankan.
+
+PANDUAN UPGRADE: smk3-web-main/docs/RENTANG_KEGIATAN.md
+Penyimpanan database memerlukan DATABASE_URL, AUTH_SECRET, migrasi,
+dan login. Tanpa koneksi/login, status menjelaskan mode browser lokal.
+Fitur ini tidak cukup dipasang dengan menyalin HTML saja.
+
+Paket tidak menyertakan .env, kredensial, database, atau unggahan.
+ZIP versi sebelumnya tetap tersedia sebagai cadangan.
+Pengiriman Telegram otomatis belum termasuk versi ini.
