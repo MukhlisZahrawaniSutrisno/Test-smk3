@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { runAparNotifications } from "@/lib/apar-notifications";
-import { whatsappService } from "@/lib/services/whatsapp.service";
 import { sendAparEmail } from "@/lib/services/email.service";
 
 export const dynamic = "force-dynamic";
@@ -16,12 +15,7 @@ export async function GET(request: Request) {
   }
   try {
     const result = await runAparNotifications({
-      db: prisma, waTo: process.env.APAR_WA_TO, emailTo: process.env.APAR_EMAIL_TO,
-      sendEmail: sendAparEmail,
-      sendWhatsApp: async options => {
-        const response = await whatsappService.sendMessage(options, 1);
-        if (!response.success) throw new Error(response.error || "WhatsApp gagal dikirim");
-      },
+      db: prisma, emailTo: process.env.APAR_EMAIL_TO, sendEmail: sendAparEmail,
     });
     return NextResponse.json(result, { status: result.errors.length ? 503 : 200, headers });
   } catch (error) {

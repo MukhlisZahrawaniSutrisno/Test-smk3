@@ -2,9 +2,12 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { Role } from "@prisma/client";
+import { requireRole } from "@/lib/auth";
 
 export async function saveSurat(data: Record<string, string>) {
     try {
+        await requireRole([Role.ADMIN])
         const { nomor, perihal, type } = data;
 
         // Validasi basic
@@ -31,6 +34,7 @@ export async function saveSurat(data: Record<string, string>) {
 
 export async function getSuratList() {
     try {
+        await requireRole([Role.ADMIN])
         const list = await prisma.arsipSurat.findMany({
             orderBy: { createdAt: "desc" },
         });
@@ -45,6 +49,7 @@ export async function getSuratList() {
 
 export async function deleteSurat(id: string) {
     try {
+        await requireRole([Role.ADMIN])
         await prisma.arsipSurat.delete({
             where: { id },
         });
@@ -57,6 +62,7 @@ export async function deleteSurat(id: string) {
 
 export async function getSuratById(id: string) {
     try {
+        await requireRole([Role.ADMIN])
         const surat = await prisma.arsipSurat.findUnique({
             where: { id },
         });

@@ -4,6 +4,9 @@ import { PrismaClient, Role, KategoriTemuan, StatusTemuan } from '@prisma/client
 const prisma = new PrismaClient()
 
 async function main() {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Seed data demo dinonaktifkan di production')
+  }
   console.log('🌱 Start seeding...')
 
   // ==========================================
@@ -76,20 +79,7 @@ async function main() {
   // 3. SYNC DATA WITEL (MONITORING)
   // ==========================================
 
-  // 1. Dapatkan semua ID witel yang memiliki laporan
-  const witelsWithLaporan = await prisma.laporan.findMany({
-    select: { witelId: true }
-  })
-  const witelIdsWithLaporan = Array.from(new Set(witelsWithLaporan.map(l => l.witelId)))
-
-  // 2. Hapus semua Witel lama yang tidak memiliki laporan
-  await prisma.witel.deleteMany({
-    where: {
-      id: { notIn: witelIdsWithLaporan }
-    }
-  })
-
-  // 3. Masukkan 8 Witel baru jika belum ada
+  // Masukkan Witel demo jika belum ada; jangan hapus data pengguna.
   const dataWitel = [
     { nama: 'Suramadu' },
     { nama: 'Solo Jateng Timur' },

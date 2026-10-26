@@ -5,9 +5,12 @@ import { revalidatePath } from "next/cache"
 import { writeFile, mkdir } from "fs/promises"
 import { join } from "path"
 import type { Prisma } from "@prisma/client"
+import { Role } from "@prisma/client"
+import { requireRole } from "@/lib/auth"
 
 export async function createIbpr(formData: FormData) {
     try {
+        await requireRole([Role.ADMIN])
         const lokasi = formData.get('lokasi') as string
         const aktivitas = formData.get('aktivitas') as string
         const bahaya = formData.get('bahaya') as string
@@ -62,6 +65,7 @@ export async function createIbpr(formData: FormData) {
 
 export async function updateIbpr(id: string, formData: FormData) {
     try {
+        await requireRole([Role.ADMIN])
         const lokasi = formData.get('lokasi') as string
         const aktivitas = formData.get('aktivitas') as string
         const bahaya = formData.get('bahaya') as string
@@ -113,6 +117,7 @@ export async function updateIbpr(id: string, formData: FormData) {
 
 export async function deleteIbpr(id: string) {
     try {
+        await requireRole([Role.ADMIN])
         await prisma.ibpr.delete({
             where: { id }
         })

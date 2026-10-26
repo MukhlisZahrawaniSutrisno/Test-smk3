@@ -1,18 +1,16 @@
 import type { EvidenceSmk3 } from "@prisma/client"
 export const dynamic = 'force-dynamic'
 
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
+import { getAuthenticatedUser } from '@/lib/auth'
 import EvidenceClientPage from '@/app/admin/evidence/client-page'
 import { EVIDENCE_AREAS, EVIDENCE_PERIODS } from '@/lib/evidence-master-data'
 
 export default async function PegawaiEvidencePage() {
-  const cookieStore = await cookies()
-  const userRole = cookieStore.get('user_role')?.value
-  const userId = cookieStore.get('user_id')?.value
-
-  if (!userId || userRole !== 'PEGAWAI') {
+  const user = await getAuthenticatedUser()
+  if (!user) redirect('/login')
+  if (user.role !== 'PEGAWAI') {
     redirect('/login')
   }
 

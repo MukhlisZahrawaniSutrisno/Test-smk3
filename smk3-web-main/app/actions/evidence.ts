@@ -5,11 +5,13 @@ import { writeFile, unlink, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import { join } from 'path'
 import { revalidatePath } from 'next/cache'
-import { cookies } from 'next/headers'
+import { Role } from '@prisma/client'
+import { requireRole } from '@/lib/auth'
 
 // 1. Ambil data evidence terunggah berdasarkan Area & Periode
 export async function getEvidenceRecords(area: string, periode: number) {
   try {
+    await requireRole([Role.ADMIN, Role.AUDITOR, Role.PEGAWAI])
     const records = await prisma.evidenceSmk3.findMany({
       where: {
         area: area,
@@ -26,6 +28,7 @@ export async function getEvidenceRecords(area: string, periode: number) {
 // 2. Upload berkas evidence TTD
 export async function uploadEvidence(formData: FormData) {
   try {
+    const currentUser = await requireRole([Role.ADMIN])
     const file = formData.get('file') as File | null
     const itemCode = formData.get('itemCode') as string
     const area = formData.get('area') as string
@@ -37,8 +40,7 @@ export async function uploadEvidence(formData: FormData) {
     }
 
     // Ambil nama user pengunggah dari cookie
-    const cookieStore = await cookies()
-    const userName = cookieStore.get('user_name')?.value || 'Pegawai Telkom'
+    const userName = currentUser.name || currentUser.email
 
     // Pastikan folder uploads/evidence ada
     const uploadDir = join(process.cwd(), 'public', 'uploads', 'evidence')
@@ -100,6 +102,7 @@ export async function uploadEvidence(formData: FormData) {
 // 3. Hapus berkas evidence
 export async function deleteEvidence(itemCode: string, area: string, periode: number) {
   try {
+    await requireRole([Role.ADMIN])
     const existing = await prisma.evidenceSmk3.findUnique({
       where: {
         itemCode_area_periode: {

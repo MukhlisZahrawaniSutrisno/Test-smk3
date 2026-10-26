@@ -1,6 +1,6 @@
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getAuthenticatedUser } from "@/lib/auth";
 import PegawaiLayoutClient from "./components/PegawaiLayoutClient";
 
 export interface PegawaiReportNotification {
@@ -19,27 +19,17 @@ export default async function PegawaiLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("user_id")?.value;
-  const userRole = cookieStore.get("user_role")?.value;
-
-  // ROUTE GUARD: Harus login terlebih dahulu
-  if (!userId) {
-    redirect("/login");
-  }
-
-  // ROUTE GUARD: Auditor diarahkan ke dashboard terpadu
-  if (userRole === "AUDITOR") {
+  const user = await getAuthenticatedUser();
+  if (!user) redirect("/login");
+  if (user.role !== "PEGAWAI") {
     redirect("/admin/dashboard");
   }
-
-  const userName = cookieStore.get("user_name")?.value || "Pegawai";
 
   let userReports: PegawaiReportNotification[] = [];
 
   try {
-    const whereConditionTemuan = userId ? { auditorId: userId } : {};
-    const whereConditionInsiden = userId ? { pelaporId: userId } : {};
+    const whereConditionTemuan = { auditorId: user.id };
+    const whereConditionInsiden = { pelaporId: user.id };
 
     const [temuan, insiden] = await Promise.all([
       prisma.temuanAudit.findMany({
@@ -81,7 +71,7 @@ export default async function PegawaiLayout({
   }
 
   return (
-    <PegawaiLayoutClient userName={userName} userReports={userReports}>
+    <PegawaiLayoutClient userName={user.name || "Pegawai"} userReports={userReports}>
       {children}
     </PegawaiLayoutClient>
   );

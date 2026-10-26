@@ -1,10 +1,10 @@
-import { PrismaClient, KategoriTemuan } from '@prisma/client'
+import { KategoriTemuan } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Save, CheckCircle, AlertTriangle, Calendar, FileText } from 'lucide-react'
 import { StatusTemuan } from "@prisma/client"
 
-const prisma = new PrismaClient()
 
 export default function CreateInspectionPage() {
 

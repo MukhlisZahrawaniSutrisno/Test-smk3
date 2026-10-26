@@ -1,14 +1,12 @@
-import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
+import { getAuthenticatedUser } from "@/lib/auth"
 import ArchiveClientPage from "./client-page"
 
 export default async function Page() {
-    const cookieStore = await cookies()
-    const userRole = cookieStore.get("user_role")?.value
-    const userId = cookieStore.get("user_id")?.value
-
-    if (!userId || (userRole !== "ADMIN" && userRole !== "AUDITOR")) {
+    const user = await getAuthenticatedUser()
+    if (!user) redirect("/login")
+    if (user.role !== "ADMIN" && user.role !== "AUDITOR") {
         redirect("/login")
     }
 
@@ -18,7 +16,7 @@ export default async function Page() {
 
     return (
         <div className="space-y-8 font-sans">
-            <ArchiveClientPage initialDocuments={documents} userRole={userRole} />
+            <ArchiveClientPage initialDocuments={documents} userRole={user.role} />
         </div>
     )
 }

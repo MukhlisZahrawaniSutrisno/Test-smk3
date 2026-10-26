@@ -1,11 +1,25 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { writeFile, mkdir, unlink } from "fs/promises"
+import { writeFile, mkdir, unlink, stat } from "fs/promises"
 import { join } from "path"
 import type { Prisma } from "@prisma/client"
+import { Role } from "@prisma/client"
+import { getAuthenticatedUser } from "@/lib/auth"
+
+async function isStoredArchiveFile(filePath: string) {
+  if (!/^\/uploads\/archive\/[A-Za-z0-9._-]+$/.test(filePath)) return false
+  try {
+    return (await stat(join(process.cwd(), "public", filePath.slice(1)))).isFile()
+  } catch {
+    return false
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getAuthenticatedUser()
+    if (!user) return NextResponse.json({ success: false, message: "Silakan login" }, { status: 401 })
+    if (user.role !== Role.ADMIN) return NextResponse.json({ success: false, message: "Akses ditolak" }, { status: 403 })
     const formData = await req.formData()
     const documentNumber = (formData.get('documentNumber') as string) || null
     const title = formData.get('title') as string
@@ -23,7 +37,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    let filePath: string | null = manualFilePath || null
+    if (manualFilePath && !await isStoredArchiveFile(manualFilePath)) {
+      return NextResponse.json({ success: false, message: "Lokasi file arsip tidak valid" }, { status: 400 })
+    }
+
+    let filePath: string | null = manualFilePath
 
     if (file && file.size > 0) {
       const bytes = await file.arrayBuffer()
@@ -66,6 +84,9 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
+    const user = await getAuthenticatedUser()
+    if (!user) return NextResponse.json({ success: false, message: "Silakan login" }, { status: 401 })
+    if (user.role !== Role.ADMIN) return NextResponse.json({ success: false, message: "Akses ditolak" }, { status: 403 })
     const formData = await req.formData()
     const id = formData.get('id') as string
     const documentNumber = (formData.get('documentNumber') as string) || null
@@ -102,6 +123,10 @@ export async function PUT(req: NextRequest) {
       )
     }
 
+    if (manualFilePath && !await isStoredArchiveFile(manualFilePath)) {
+      return NextResponse.json({ success: false, message: "Lokasi file arsip tidak valid" }, { status: 400 })
+    }
+
     const updateData: Prisma.DocumentArchiveUpdateInput = {
       documentNumber,
       title,
@@ -111,7 +136,7 @@ export async function PUT(req: NextRequest) {
       digitalStatus,
     }
 
-    if (manualFilePath) {
+    if (manualFilePath && manualFilePath !== existingDoc.filePath) {
       updateData.filePath = manualFilePath
       updateData.digitalStatus = "Sudah Digital"
     }

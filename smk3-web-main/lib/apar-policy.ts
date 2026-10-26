@@ -1,4 +1,4 @@
-export type AparNotificationType = "WEB_WARNING" | "WA_EXPIRED" | "EMAIL_EXPIRED";
+export type AparNotificationType = "WEB_WARNING" | "EMAIL_EXPIRED";
 
 /** Date-only values use UTC midnight; the current day is determined in Jakarta. */
 export function getJakartaToday(now: Date = new Date()): Date {
@@ -18,7 +18,7 @@ export function getWarningStart(expiry: Date): Date {
 
 export function getAparNotificationTypes(expiry: Date, today: Date): AparNotificationType[] {
   if (today < getWarningStart(expiry)) return [];
-  return today >= expiry ? ["WEB_WARNING", "WA_EXPIRED", "EMAIL_EXPIRED"] : ["WEB_WARNING"];
+  return today >= expiry ? ["WEB_WARNING", "EMAIL_EXPIRED"] : ["WEB_WARNING"];
 }
 
 export function getAparWarningMessage(apar: { kodeApar: string; lokasi: string; tanggalExpired: Date }, today: Date): string {

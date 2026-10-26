@@ -1,11 +1,10 @@
 // app/admin/audit/[id]/page.tsx
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { ArrowLeft, Calendar, MapPin, User, CheckCircle, AlertTriangle, Trash2, CheckSquare } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import EvidencePhotoCard from '@/app/components/EvidencePhotoCard'
 
-const prisma = new PrismaClient()
 
 // --- SERVER ACTION: MARK AS DONE ---
 async function markAsDone(id: string) {

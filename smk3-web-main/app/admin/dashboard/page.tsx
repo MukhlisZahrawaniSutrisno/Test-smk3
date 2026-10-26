@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
+import { getAuthenticatedUser } from "@/lib/auth";
 import {
   Users,
   AlertTriangle,
@@ -25,9 +25,9 @@ export default async function AdminDashboard() {
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
 
-  const cookieStore = await cookies();
-  const userRole = cookieStore.get("user_role")?.value || "ADMIN";
-  const userName = cookieStore.get("user_name")?.value || "Admin";
+  const user = await getAuthenticatedUser();
+  const userRole = user?.role || "ADMIN";
+  const userName = user?.name || "Admin";
 
   // 1. Ambil Data Statistik & Aktivitas Secara Paralel
   const [

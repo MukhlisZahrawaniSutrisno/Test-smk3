@@ -6,6 +6,8 @@ import { revalidatePath } from 'next/cache'
 import { writeFile, mkdir, unlink } from 'fs/promises'
 import path from 'path'
 import type { KriteriaReferenceDoc } from '@prisma/client'
+import { Role } from '@prisma/client'
+import { requireRole } from '@/lib/auth'
 
 export interface KriteriaWithDoc extends KriteriaItem {
   dbId?: string
@@ -20,6 +22,7 @@ export interface KriteriaWithDoc extends KriteriaItem {
 
 export async function getKriteriaWithDocuments(): Promise<KriteriaWithDoc[]> {
   try {
+    await requireRole([Role.ADMIN, Role.AUDITOR, Role.PEGAWAI])
     let dbDocs: KriteriaReferenceDoc[] = []
     try {
       dbDocs = await prisma.kriteriaReferenceDoc.findMany()
@@ -79,11 +82,12 @@ export async function getKriteriaWithDocuments(): Promise<KriteriaWithDoc[]> {
 
 export async function saveKriteriaDocument(formData: FormData) {
   try {
+    const currentUser = await requireRole([Role.ADMIN])
     const kriteriaNo = formData.get('kriteriaNo') as string
     const docNumber = formData.get('docNumber') as string
     const docTitle = (formData.get('docTitle') as string) || null
     const keterangan = (formData.get('keterangan') as string) || null
-    const updatedBy = (formData.get('updatedBy') as string) || 'Admin'
+    const updatedBy = currentUser.name || currentUser.email
     const file = formData.get('file') as File | null
 
     if (!kriteriaNo || !docNumber) {
@@ -149,6 +153,7 @@ export async function saveKriteriaDocument(formData: FormData) {
 
 export async function deleteKriteriaDocFile(kriteriaNo: string) {
   try {
+    await requireRole([Role.ADMIN])
     const record = await prisma.kriteriaReferenceDoc.findUnique({
       where: { kriteriaNo },
     })

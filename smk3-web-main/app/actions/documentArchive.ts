@@ -5,9 +5,12 @@ import { revalidatePath } from "next/cache"
 import { writeFile, mkdir, unlink } from "fs/promises"
 import { join } from "path"
 import type { Prisma } from "@prisma/client"
+import { Role } from "@prisma/client"
+import { requireRole } from "@/lib/auth"
 
 export async function createDocumentArchive(formData: FormData) {
   try {
+    await requireRole([Role.ADMIN])
     const documentNumber = formData.get('documentNumber') as string
     const title = formData.get('title') as string
     const documentType = formData.get('documentType') as string
@@ -64,6 +67,7 @@ export async function createDocumentArchive(formData: FormData) {
 
 export async function updateDocumentArchive(id: string, formData: FormData) {
   try {
+    await requireRole([Role.ADMIN])
     const documentNumber = formData.get('documentNumber') as string
     const title = formData.get('title') as string
     const documentType = formData.get('documentType') as string
@@ -138,6 +142,7 @@ export async function updateDocumentArchive(id: string, formData: FormData) {
 
 export async function deleteDocumentArchive(id: string) {
   try {
+    await requireRole([Role.ADMIN])
     const doc = await prisma.documentArchive.findUnique({
       where: { id }
     })

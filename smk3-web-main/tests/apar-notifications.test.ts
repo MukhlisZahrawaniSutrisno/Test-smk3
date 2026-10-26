@@ -6,7 +6,7 @@ type StoredLog = { aparId: string; tipe: string; tanggalExpiredSnapshot: Date; p
 type LogQuery = { where: { aparId: string; tanggalExpiredSnapshot: Date } };
 
 function fixture() {
-  const asset = { id: "a1", kodeApar: "APAR-1", lokasi: "Lobby", status: "ACTIVE", tanggalExpired: new Date("2026-10-06"), picNomorWa: "6281234567890" };
+  const asset = { id: "a1", kodeApar: "APAR-1", lokasi: "Lobby", status: "ACTIVE", tanggalExpired: new Date("2026-10-06") };
   const logs: StoredLog[] = [];
   let locked = false;
   const storage = {
@@ -32,60 +32,52 @@ function fixture() {
 }
 const now = new Date("2026-10-06T00:00:00Z");
 
-test("successful notifications are recorded once per expiry cycle", async () => {
-  const f = fixture(); let wa = 0; let email = 0;
-  const deps = { db: f.db, now, waTo: "", emailTo: "k3@example.com", sendWhatsApp: async () => { wa++; }, sendEmail: async () => { email++; } };
+test("email notifications are recorded once per expiry cycle", async () => {
+  const f = fixture(); let email = 0;
+  const deps = { db: f.db, now, emailTo: "k3@example.com", sendEmail: async () => { email++; } };
   const first = await runAparNotifications(deps);
   await runAparNotifications(deps);
-  assert.equal(first.created, 3); assert.equal(f.logs.length, 3); assert.equal(wa, 1); assert.equal(email, 1);
+  assert.equal(first.created, 2); assert.equal(f.logs.length, 2); assert.equal(email, 1);
+  assert.deepEqual(f.logs.map(l => l.tipe), ["WEB_WARNING", "EMAIL_EXPIRED"]);
   f.asset.tanggalExpired = new Date("2026-10-05");
   await runAparNotifications(deps);
-  assert.equal(f.logs.length, 6); assert.equal(wa, 2); assert.equal(email, 2);
+  assert.equal(f.logs.length, 4); assert.equal(email, 2);
 });
-test("failed WA creates no log, does not suppress email, and retries next run", async () => {
-  const f = fixture(); let wa = 0; let email = 0;
-  const deps = { db: f.db, now, waTo: "", emailTo: "k3@example.com", sendWhatsApp: async () => { if (++wa === 1) throw new Error("gateway down"); }, sendEmail: async () => { email++; } };
+test("failed email creates no log and retries next run", async () => {
+  const f = fixture(); let email = 0;
+  const deps = { db: f.db, now, emailTo: "k3@example.com", sendEmail: async () => { if (++email === 1) throw new Error("SMTP down"); } };
   const first = await runAparNotifications(deps);
-  assert.equal(first.errors.length, 1); assert.deepEqual(f.logs.map(l => l.tipe), ["WEB_WARNING", "EMAIL_EXPIRED"]);
+  assert.equal(first.errors.length, 1); assert.deepEqual(f.logs.map(l => l.tipe), ["WEB_WARNING"]);
   const second = await runAparNotifications(deps);
-  assert.equal(second.errors.length, 0); assert.equal(wa, 2); assert.equal(email, 1); assert.equal(f.logs.length, 3);
+  assert.equal(second.errors.length, 0); assert.equal(email, 2); assert.equal(f.logs.length, 2);
 });
 test("non-active assets are never notified", async () => {
   for (const status of ["IN_MAINTENANCE", "REFILLED", "DISPOSED"]) {
     const f = fixture(); f.asset.status = status;
-    await runAparNotifications({ db: f.db, now, sendWhatsApp: async () => { assert.fail("WA sent"); }, sendEmail: async () => { assert.fail("email sent"); } });
+    await runAparNotifications({ db: f.db, now, sendEmail: async () => { assert.fail("email sent"); } });
     assert.equal(f.logs.length, 0);
   }
 });
-test("missing recipients are failures without successful external logs", async () => {
-  const f = fixture(); f.asset.picNomorWa = "";
-  const result = await runAparNotifications({ db: f.db, now, sendWhatsApp: async () => {}, sendEmail: async () => {} });
-  assert.equal(result.errors.length, 2); assert.deepEqual(f.logs.map(l => l.tipe), ["WEB_WARNING"]);
-});
-test("email failure retains successful WA and retries email alone", async () => {
-  const f = fixture(); let wa = 0; let email = 0;
-  const deps = { db: f.db, now, emailTo: "k3@example.com", sendWhatsApp: async () => { wa++; }, sendEmail: async () => { if (++email === 1) throw new Error("SMTP down"); } };
-  const first = await runAparNotifications(deps);
-  assert.equal(first.errors.length, 1);
-  assert.deepEqual(f.logs.map(l => l.tipe), ["WEB_WARNING", "WA_EXPIRED"]);
-  await runAparNotifications(deps);
-  assert.equal(wa, 1); assert.equal(email, 2); assert.equal(f.logs.length, 3);
-});
-test("warning window creates web notification without external sends", async () => {
+test("missing email recipient is a failure without a successful email log", async () => {
   const f = fixture();
-  const result = await runAparNotifications({ db: f.db, now: new Date("2026-08-06"), sendWhatsApp: async () => { assert.fail("WA sent early"); }, sendEmail: async () => { assert.fail("email sent early"); } });
+  const result = await runAparNotifications({ db: f.db, now, sendEmail: async () => {} });
+  assert.equal(result.errors.length, 1); assert.deepEqual(f.logs.map(l => l.tipe), ["WEB_WARNING"]);
+});
+test("warning window creates web notification without external email", async () => {
+  const f = fixture();
+  const result = await runAparNotifications({ db: f.db, now: new Date("2026-08-06"), sendEmail: async () => { assert.fail("email sent early"); } });
   assert.equal(result.created, 1); assert.deepEqual(f.logs.map(l => l.tipe), ["WEB_WARNING"]);
 });
 test("overlapping cron skips an asset locked by another invocation", async () => {
   const f = fixture(); let entered!: () => void; let release!: () => void;
   const started = new Promise<void>(resolve => { entered = resolve; });
   const waiting = new Promise<void>(resolve => { release = resolve; });
-  let wa = 0;
-  const deps = { db: f.db, now, emailTo: "k3@example.com", sendWhatsApp: async () => { wa++; entered(); await waiting; }, sendEmail: async () => {} };
+  let email = 0;
+  const deps = { db: f.db, now, emailTo: "k3@example.com", sendEmail: async () => { email++; entered(); await waiting; } };
   const first = runAparNotifications(deps);
   await started;
   const overlapping = await runAparNotifications(deps);
   assert.equal(overlapping.skippedLocked, 1); assert.equal(overlapping.created, 0);
   release(); await first;
-  assert.equal(wa, 1); assert.equal(f.logs.length, 3);
+  assert.equal(email, 1); assert.equal(f.logs.length, 2);
 });

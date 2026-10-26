@@ -1,17 +1,15 @@
 // app/admin/users/page.tsx
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
+import { getAuthenticatedUser } from '@/lib/auth'
 import { Plus, User, Shield, Inbox } from 'lucide-react'
 import Link from 'next/link'
 import DeleteButton from './DeleteUserButton'
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
-const prisma = new PrismaClient()
-
 export default async function UsersPage() {
-  const cookieStore = await cookies()
-  const userRole = cookieStore.get('user_role')?.value
-  if (userRole !== 'ADMIN') {
+  const user = await getAuthenticatedUser()
+  if (!user) redirect('/login')
+  if (user.role !== 'ADMIN') {
     redirect('/admin/audit')
   }
 

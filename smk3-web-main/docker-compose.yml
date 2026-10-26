@@ -21,7 +21,6 @@ services:
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-}
       NODE_ENV: production
       CRON_SECRET: ${CRON_SECRET:-}
-      APAR_WA_TO: ${APAR_WA_TO:-}
       APAR_EMAIL_TO: ${APAR_EMAIL_TO:-}
       WA_PROVIDER: ${WA_PROVIDER:-FONNTE}
       WA_API_TOKEN: ${WA_API_TOKEN:-}

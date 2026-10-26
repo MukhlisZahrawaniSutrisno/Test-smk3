@@ -11,19 +11,21 @@ import {
   ArrowRight,
   CheckCircle2
 } from "lucide-react";
-import { cookies } from "next/headers";
+import { getAuthenticatedUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import DashboardHero from "@/app/components/dashboard/DashboardHero";
 import RecentActivityFeed, { ActivityItem } from "@/app/components/dashboard/RecentActivityFeed";
 
 export default async function PegawaiDashboard() {
-  const cookieStore = await cookies();
-  const userName = cookieStore.get("user_name")?.value || "Rekan Telkom";
-  const userId = cookieStore.get("user_id")?.value;
-  const userRole = cookieStore.get("user_role")?.value || "PEGAWAI";
+  const user = await getAuthenticatedUser();
+  if (!user || user.role !== "PEGAWAI") redirect("/login");
+  const userName = user.name || "Rekan Telkom";
+  const userId = user.id;
+  const userRole = user.role;
 
   // Ambil Data Khusus Pegawai & Data Global
-  const whereConditionTemuan = userId ? { auditorId: userId } : {};
-  const whereConditionInsiden = userId ? { pelaporId: userId } : {};
+  const whereConditionTemuan = { auditorId: userId };
+  const whereConditionInsiden = { pelaporId: userId };
 
   const [
     myTemuanCount,

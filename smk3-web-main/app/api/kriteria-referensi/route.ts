@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { writeFile, mkdir, unlink } from 'fs/promises'
 import path from 'path'
 import { revalidatePath } from 'next/cache'
+import { Role } from '@prisma/client'
+import { getAuthenticatedUser } from '@/lib/auth'
 
 async function ensureTableExists() {
   try {
@@ -28,6 +30,9 @@ async function ensureTableExists() {
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getAuthenticatedUser()
+    if (!user) return NextResponse.json({ success: false, error: 'Silakan login' }, { status: 401 })
+    if (user.role !== Role.ADMIN) return NextResponse.json({ success: false, error: 'Akses ditolak' }, { status: 403 })
     await ensureTableExists()
 
     const formData = await req.formData()
@@ -35,7 +40,7 @@ export async function POST(req: NextRequest) {
     const docNumber = formData.get('docNumber') as string
     const docTitle = (formData.get('docTitle') as string) || null
     const keterangan = (formData.get('keterangan') as string) || null
-    const updatedBy = (formData.get('updatedBy') as string) || 'Admin'
+    const updatedBy = user.name || user.email
     const file = formData.get('file') as File | null
 
     if (!kriteriaNo || !docNumber) {
@@ -114,6 +119,9 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const user = await getAuthenticatedUser()
+    if (!user) return NextResponse.json({ success: false, error: 'Silakan login' }, { status: 401 })
+    if (user.role !== Role.ADMIN) return NextResponse.json({ success: false, error: 'Akses ditolak' }, { status: 403 })
     await ensureTableExists()
 
     const { kriteriaNo } = await req.json()

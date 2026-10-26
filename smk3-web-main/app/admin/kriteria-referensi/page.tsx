@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
-import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
+import { getAuthenticatedUser } from "@/lib/auth"
 import { getKriteriaWithDocuments } from "@/app/actions/kriteriaReference"
 import KriteriaClient from "./KriteriaClient"
 
@@ -11,21 +11,16 @@ export const metadata = {
 }
 
 export default async function AdminKriteriaReferensiPage() {
-  const cookieStore = await cookies()
-  const userRole = cookieStore.get("user_role")?.value
-  const userName = cookieStore.get("user_name")?.value || "Admin"
-
-  if (!userRole) {
-    redirect("/login")
-  }
+  const user = await getAuthenticatedUser()
+  if (!user) redirect("/login")
 
   const kriteriaData = await getKriteriaWithDocuments()
 
   return (
     <KriteriaClient
       initialData={JSON.parse(JSON.stringify(kriteriaData))}
-      userRole={userRole}
-      userName={userName}
+      userRole={user.role}
+      userName={user.name || "Admin"}
     />
   )
 }

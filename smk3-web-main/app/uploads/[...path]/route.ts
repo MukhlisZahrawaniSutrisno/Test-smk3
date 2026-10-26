@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFile, stat } from "fs/promises";
-import { join } from "path";
+import { relative, resolve, sep } from "path";
+import { getAuthenticatedUser } from "@/lib/auth";
 // import { lookup } from "mime-types";
 
 export const dynamic = 'force-dynamic';
@@ -10,6 +11,9 @@ export async function GET(
     { params }: { params: Promise<{ path: string[] }> }
 ) {
     try {
+        if (!await getAuthenticatedUser()) {
+            return new NextResponse("Unauthorized", { status: 401 });
+        }
         const resolvedParams = await params;
 
         // 1. Ambil path dari URL (misal: /uploads/foto.jpg -> ['foto.jpg'])
@@ -21,7 +25,12 @@ export async function GET(
         }
 
         // 2. Tentukan lokasi asli file di server
-        const fullPath = join(process.cwd(), "public/uploads", fileName);
+        const uploadsRoot = resolve(process.cwd(), "public", "uploads");
+        const fullPath = resolve(uploadsRoot, ...filePathArray);
+        const relativePath = relative(uploadsRoot, fullPath);
+        if (!relativePath || relativePath.startsWith(`..${sep}`) || relativePath === ".." || resolve(uploadsRoot, relativePath) !== fullPath) {
+            return new NextResponse("Invalid file path", { status: 400 });
+        }
 
         // 3. Cek apakah file ada
         try {
@@ -46,7 +55,7 @@ export async function GET(
         return new NextResponse(fileBuffer, {
             headers: {
                 "Content-Type": contentType,
-                "Cache-Control": "public, max-age=31536000, immutable"
+                "Cache-Control": "private, no-store"
             }
         });
 

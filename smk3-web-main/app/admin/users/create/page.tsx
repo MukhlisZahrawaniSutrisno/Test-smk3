@@ -1,33 +1,37 @@
 // app/admin/users/create/page.tsx
-import { PrismaClient, Role } from '@prisma/client'
+import { Role } from '@prisma/client'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Save, UserPlus } from 'lucide-react'
-import { cookies } from 'next/headers'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
+import { getAuthenticatedUser, requireRole } from '@/lib/auth'
+import { hashPassword } from '@/lib/password'
 
 export default async function CreateUserPage() {
-  const cookieStore = await cookies()
-  const userRole = cookieStore.get('user_role')?.value
-  if (userRole !== 'ADMIN') {
+  const user = await getAuthenticatedUser()
+  if (!user) redirect('/login')
+  if (user.role !== 'ADMIN') {
     redirect('/admin/audit')
   }
 
   async function createUser(formData: FormData) {
     'use server'
 
-    const name = formData.get('name') as string
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const role = formData.get('role') as Role
-    
+    const name = String(formData.get('name') || '')
+    const email = String(formData.get('email') || '')
+    const password = String(formData.get('password') || '')
+    const role = String(formData.get('role') || '')
+    await requireRole([Role.ADMIN])
+    if (!name.trim() || !email.trim() || password.length < 8 || !Object.values(Role).includes(role as Role)) {
+      throw new Error('Data pengguna tidak valid')
+    }
+
     await prisma.user.create({
       data: {
-        name,
-        email,
-        password, // Di aplikasi nyata, ini harus di-hash (bcrypt), tapi utk MVP ini oke.
-        role
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password: await hashPassword(password),
+        role: role as Role,
       }
     })
 
@@ -63,7 +67,7 @@ export default async function CreateUserPage() {
 
           <div className="space-y-2">
             <label className="text-sm font-bold text-slate-700 dark:text-slate-200">Password</label>
-            <input name="password" type="password" placeholder="******" required className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" />
+            <input name="password" type="password" minLength={8} placeholder="Minimal 8 karakter" required className="w-full p-3 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg focus:ring-2 focus:ring-red-500 outline-none" />
           </div>
 
           <div className="space-y-2">

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getAuthenticatedUser } from "@/lib/auth";
 import AdminLayoutClient from "./AdminLayoutClient";
 
 export const metadata: Metadata = {
@@ -14,31 +14,10 @@ export default async function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("user_id")?.value;
-  const userRole = cookieStore.get("user_role")?.value || "GUEST";
-
-  // ROUTE GUARD: Harus login terlebih dahulu
-  if (!userId) {
-    redirect("/login");
-  }
-
-  // ROUTE GUARD: Role PEGAWAI tidak boleh masuk ke panel admin
-  if (userRole === "PEGAWAI") {
+  const user = await getAuthenticatedUser();
+  if (!user) redirect("/login");
+  if (user.role === "PEGAWAI") {
     redirect("/pegawai/dashboard");
-  }
-
-  let userName = "Admin";
-
-  try {
-    if (userId) {
-      const user = await prisma.user.findUnique({ where: { id: userId } });
-      if (user) {
-        userName = user.name || "Admin";
-      }
-    }
-  } catch (error) {
-    console.error("Layout load user error:", error);
   }
 
   // AMBIL DATA NOTIFIKASI SECARA DINAMIS
@@ -50,8 +29,8 @@ export default async function AdminLayout({
 
   return (
     <AdminLayoutClient
-      userName={userName}
-      userRole={userRole}
+      userName={user.name || "Admin"}
+      userRole={user.role}
       openAuditsCount={openAuditsCount}
       incidentsCount={incidentsCount}
     >

@@ -4,9 +4,12 @@ import { prisma } from '@/lib/prisma'
 import { writeFile, unlink } from 'fs/promises'
 import { join } from 'path'
 import { revalidatePath } from 'next/cache'
+import { Role } from '@prisma/client'
+import { requireRole } from '@/lib/auth'
 
 // 1. AMBIL DATA MONITORING
 export async function getMonitoringData(tahun: number) {
+  await requireRole([Role.ADMIN, Role.AUDITOR])
   // Ambil semua Witel beserta laporannya di tahun tertentu
   const data = await prisma.witel.findMany({
     include: {
@@ -21,6 +24,7 @@ export async function getMonitoringData(tahun: number) {
 
 // 2. UPLOAD LAPORAN
 export async function uploadLaporan(formData: FormData) {
+  await requireRole([Role.ADMIN])
   const file = formData.get('file') as File
   const witelId = Number(formData.get('witelId'))
   const bulanIndex = Number(formData.get('bulanIndex'))
@@ -77,6 +81,7 @@ export async function uploadLaporan(formData: FormData) {
 // 3. HAPUS LAPORAN
 export async function deleteLaporan(laporanId: number, fileUrl: string) {
   try {
+    await requireRole([Role.ADMIN])
     // Hapus data di database
     await prisma.laporan.delete({
       where: { id: laporanId }

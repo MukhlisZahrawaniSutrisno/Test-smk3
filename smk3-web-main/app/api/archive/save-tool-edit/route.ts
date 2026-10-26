@@ -3,9 +3,14 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { writeFile, mkdir, unlink } from "fs/promises"
 import { join } from "path"
+import { Role } from "@prisma/client"
+import { getAuthenticatedUser } from "@/lib/auth"
 
 export async function POST(req: NextRequest) {
   try {
+    const user = await getAuthenticatedUser()
+    if (!user) return NextResponse.json({ success: false, message: "Silakan login" }, { status: 401 })
+    if (user.role !== Role.ADMIN) return NextResponse.json({ success: false, message: "Akses ditolak" }, { status: 403 })
     const formData = await req.formData()
     const archiveId = formData.get('archiveId') as string | null
     const existingFilePath = formData.get('filePath') as string | null

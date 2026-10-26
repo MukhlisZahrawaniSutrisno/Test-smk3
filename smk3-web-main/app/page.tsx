@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers'
+import { getAuthenticatedUser } from '@/lib/auth'
 import LandingNavbar from './components/landing/LandingNavbar'
 import HeroSection from './components/landing/HeroSection'
 import LegalAndCycleSection from './components/landing/LegalAndCycleSection'
@@ -9,9 +9,9 @@ import QuickSosBar from './components/landing/QuickSosBar'
 import LandingFooter from './components/landing/LandingFooter'
 
 export default async function HomePage() {
-  const cookieStore = await cookies()
-  const userRole = cookieStore.get('user_role')?.value || null
-  const userName = cookieStore.get('user_name')?.value || null
+  const user = await getAuthenticatedUser()
+  const userRole = user?.role || null
+  const userName = user?.name || null
 
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-red-500 selection:text-white transition-colors duration-300">
@@ -40,4 +40,4 @@ export default async function HomePage() {
       <LandingFooter />
     </div>
   )
-} 
+}

@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 // app/admin/kecelakaan/page.tsx
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { Ambulance, Calendar, MapPin, User, FileWarning, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 import DeleteButton from './DeleteButton'
@@ -8,7 +8,6 @@ import MarkDoneButton from './MarkDoneButton'
 import IncidentFilter from './IncidentFilter'
 import EvidencePhotoCard from '@/app/components/EvidencePhotoCard'
 
-const prisma = new PrismaClient()
 
 interface SearchParams {
   q?: string;

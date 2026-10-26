@@ -4,10 +4,12 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { writeFile, mkdir } from "fs/promises"
 import { join } from "path"
-import { cookies } from "next/headers"
+import { Role } from "@prisma/client"
+import { requireRole } from "@/lib/auth"
 
 export async function createLaporanKecelakaan(formData: FormData) {
   try {
+    const currentUser = await requireRole([Role.PEGAWAI, Role.ADMIN, Role.AUDITOR])
     const judul = formData.get('judul') as string
     const lokasi = formData.get('lokasi') as string
     const kronologi = formData.get('kronologi') as string
@@ -48,24 +50,6 @@ export async function createLaporanKecelakaan(formData: FormData) {
       fotoUrl = stampedUrl || originalUrl || null
     }
 
-    const cookieStore = await cookies()
-    const rawUserId = cookieStore.get("user_id")?.value
-
-    // Pastikan jika pelaporan dari formulir pegawai, pelapor selalu ber-role PEGAWAI
-    let finalPelaporId: string | null = null
-    if (rawUserId) {
-      const currentUser = await prisma.user.findUnique({ where: { id: rawUserId } })
-      if (currentUser?.role === 'PEGAWAI') {
-        finalPelaporId = currentUser.id
-      }
-    }
-
-    // Fallback jika Admin/Auditor sedang mengetes form pegawai di browser yang sama
-    if (!finalPelaporId) {
-      const defaultPegawai = await prisma.user.findFirst({ where: { role: 'PEGAWAI' } })
-      finalPelaporId = defaultPegawai?.id || rawUserId || null
-    }
-
     await prisma.laporanKecelakaan.create({
       data: {
         judul,
@@ -74,7 +58,7 @@ export async function createLaporanKecelakaan(formData: FormData) {
         korban,
         fotoBukti: fotoUrl,
         waktuKejadian: new Date(waktuString),
-        pelaporId: finalPelaporId,
+        pelaporId: currentUser.id,
       }
     })
 
@@ -92,6 +76,7 @@ export async function createLaporanKecelakaan(formData: FormData) {
 
 export async function deleteLaporanKecelakaan(id: string) {
   try {
+    await requireRole([Role.ADMIN])
     await prisma.laporanKecelakaan.delete({
       where: { id }
     })
@@ -105,6 +90,7 @@ export async function deleteLaporanKecelakaan(id: string) {
 
 export async function markIncidentAsDone(id: string) {
   try {
+    await requireRole([Role.ADMIN])
     await prisma.laporanKecelakaan.update({
       where: { id },
       data: { status: "CLOSED" }

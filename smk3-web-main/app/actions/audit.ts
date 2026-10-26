@@ -4,36 +4,19 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { writeFile, mkdir } from "fs/promises"
 import { join } from "path"
-import { Kondisi, StatusTemuan } from "@prisma/client"
-import { cookies } from "next/headers"
+import { Kondisi, Role, StatusTemuan } from "@prisma/client"
+import { requireRole } from "@/lib/auth"
 
 // 1. FUNGSI BUAT LAPORAN (LOGIC BARU)
 export async function createLaporanTemuan(formData: FormData) {
   try {
+    const currentUser = await requireRole([Role.ADMIN, Role.AUDITOR, Role.PEGAWAI])
     const judul = formData.get('judul') as string
     const lokasi = formData.get('lokasi') as string
     const deskripsi = formData.get('deskripsi') as string
     const foto = formData.get('foto') as File
     const waktuTemuanString = formData.get('waktuTemuan') as string
     const kondisiInput = formData.get('kondisi') as string
-    const cookieStore = await cookies()
-    const rawUserId = cookieStore.get("user_id")?.value
-
-    // Pastikan jika pelaporan dari formulir pegawai, pelapor selalu ber-role PEGAWAI
-    let finalPelaporId: string | null = null
-    if (rawUserId) {
-      const currentUser = await prisma.user.findUnique({ where: { id: rawUserId } })
-      if (currentUser?.role === 'PEGAWAI') {
-        finalPelaporId = currentUser.id
-      }
-    }
-
-    // Fallback jika Admin/Auditor sedang mengetes form pegawai di browser yang sama
-    if (!finalPelaporId) {
-      const defaultPegawai = await prisma.user.findFirst({ where: { role: 'PEGAWAI' } })
-      finalPelaporId = defaultPegawai?.id || rawUserId || null
-    }
-
     const fotoOriginal = formData.get('fotoOriginal') as File | null
 
     if (!judul || !lokasi) {
@@ -85,7 +68,7 @@ export async function createLaporanTemuan(formData: FormData) {
         waktuTemuan: waktuTemuan,
         kondisi: kondisiFinal,
         status: statusOtomatis, // Pakai status otomatis tadi
-        auditorId: finalPelaporId,
+        auditorId: currentUser.id,
       }
     })
 
@@ -105,6 +88,7 @@ export async function createLaporanTemuan(formData: FormData) {
 // 2. FUNGSI UPDATE STATUS (Tetap sama)
 export async function updateStatusAudit(id: string, statusBaru: StatusTemuan) {
   try {
+    await requireRole([Role.ADMIN, Role.AUDITOR])
     await prisma.temuanAudit.update({
       where: { id },
       data: { status: statusBaru }
@@ -118,6 +102,7 @@ export async function updateStatusAudit(id: string, statusBaru: StatusTemuan) {
 // 3. FUNGSI HAPUS LAPORAN (BARU) 🗑️
 export async function deleteLaporan(id: string) {
   try {
+    await requireRole([Role.ADMIN])
     await prisma.temuanAudit.delete({
       where: { id }
     })

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedUserFromToken, SESSION_COOKIE } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getAparWebNotifications } from '@/lib/apar-web-notifications'
 
@@ -7,10 +8,8 @@ export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   const headers = { 'Cache-Control': 'private, no-store' }
-  const userId = request.cookies.get('user_id')?.value
-  if (!userId) return NextResponse.json({ error: 'Silakan login' }, { status: 401, headers })
   try {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true } })
+    const user = await getAuthenticatedUserFromToken(request.cookies.get(SESSION_COOKIE)?.value)
     if (!user) return NextResponse.json({ error: 'Sesi tidak valid' }, { status: 401, headers })
     return NextResponse.json(await getAparWebNotifications(prisma), { headers })
   } catch (error) {

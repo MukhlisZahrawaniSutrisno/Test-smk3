@@ -3,10 +3,13 @@
 import { prisma } from "@/lib/prisma"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
+import { hashPassword, verifyPassword } from "@/lib/password"
+import { createSessionToken } from "@/lib/session-token"
+import { SESSION_COOKIE, SESSION_MAX_AGE } from "@/lib/auth"
 
 export async function loginAction(formData: FormData) {
   try {
-    const email = (formData.get("email") as string)?.trim()
+    const email = String(formData.get("email") || "").trim().toLowerCase()
     const password = formData.get("password") as string
 
     if (!email || !password) {
@@ -15,14 +18,29 @@ export async function loginAction(formData: FormData) {
 
     const user = await prisma.user.findUnique({ where: { email } })
 
-    if (!user || user.password !== password) {
+    if (!user) {
       return { success: false, message: "Email atau password salah!" }
     }
 
+    const secret = process.env.AUTH_SECRET
+    if (!secret) throw new Error("AUTH_SECRET wajib diisi")
+    const passwordCheck = await verifyPassword(password, user.password)
+    if (!passwordCheck.valid) return { success: false, message: "Email atau password salah!" }
+    if (passwordCheck.needsUpgrade) {
+      await prisma.user.update({ where: { id: user.id }, data: { password: await hashPassword(password) } })
+    }
+
     const cookieStore = await cookies()
-    cookieStore.set("user_role", user.role)
-    cookieStore.set("user_id", user.id.toString())
-    cookieStore.set("user_name", user.name || "User")
+    cookieStore.set(SESSION_COOKIE, createSessionToken(user.id, secret), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: SESSION_MAX_AGE,
+    })
+    cookieStore.delete("user_role")
+    cookieStore.delete("user_id")
+    cookieStore.delete("user_name")
 
     let redirectPath = "/admin/dashboard"
     if (user.role === "PEGAWAI") redirectPath = "/pegawai/dashboard"
@@ -37,6 +55,7 @@ export async function loginAction(formData: FormData) {
 
 export async function logout() {
   const c = await cookies()
+  c.delete(SESSION_COOKIE)
   c.delete("user_role")
   c.delete("user_id")
   c.delete("user_name")

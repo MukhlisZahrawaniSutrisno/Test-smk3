@@ -2,9 +2,12 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
+import { Role } from "@prisma/client"
+import { requireRole } from "@/lib/auth"
 
 export async function deleteUserAction(id: string) {
     try {
+        await requireRole([Role.ADMIN])
         // Mencegah penghapusan user terakhir (biar gak kekunci)
         const totalUsers = await prisma.user.count()
         if (totalUsers <= 1) {

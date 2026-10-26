@@ -1,14 +1,12 @@
 import { Suspense } from "react"
-import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
+import { getAuthenticatedUser } from "@/lib/auth"
 import ToolsClient from "@/app/admin/document-tools/ToolsClient"
 
 export default async function PegawaiDocumentToolsPage() {
-  const cookieStore = await cookies()
-  const userRole = cookieStore.get("user_role")?.value
-  const userId = cookieStore.get("user_id")?.value
-
-  if (!userId || userRole !== "PEGAWAI") {
+  const user = await getAuthenticatedUser()
+  if (!user) redirect("/login")
+  if (user.role !== "PEGAWAI") {
     redirect("/login")
   }
 

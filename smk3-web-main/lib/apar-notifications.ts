@@ -6,9 +6,7 @@ type NotificationError = { aparId: string; tipe?: AparNotificationType; message:
 type RunOptions = {
   db: AparNotificationDatabase;
   now?: Date;
-  waTo?: string;
   emailTo?: string;
-  sendWhatsApp: (options: { recipientPhone: string; message: string }) => Promise<void>;
   sendEmail: (options: { to: string; subject: string; text: string }) => Promise<void>;
 };
 
@@ -38,11 +36,7 @@ export async function runAparNotifications(options: RunOptions) {
         for (const tipe of types) {
           if (existing.some(log => log.tipe === tipe)) { counts.alreadySent++; continue; }
           try {
-            if (tipe === "WA_EXPIRED") {
-              const recipientPhone = apar.picNomorWa.trim() || options.waTo?.trim();
-              if (!recipientPhone) throw new Error("PIC WhatsApp / APAR_WA_TO belum dikonfigurasi");
-              await options.sendWhatsApp({ recipientPhone, message: pesan });
-            } else if (tipe === "EMAIL_EXPIRED") {
+            if (tipe === "EMAIL_EXPIRED") {
               const to = options.emailTo?.trim();
               if (!to) throw new Error("APAR_EMAIL_TO belum dikonfigurasi");
               await options.sendEmail({ to, subject: `APAR kedaluwarsa: ${apar.kodeApar}`, text: pesan });

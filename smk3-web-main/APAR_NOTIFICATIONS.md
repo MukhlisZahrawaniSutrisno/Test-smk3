@@ -20,21 +20,19 @@ Isi `.env` mengikuti `.env.example`:
 
 ```dotenv
 CRON_SECRET=<secret-acak-panjang>
-WA_PROVIDER=FONNTE
-WA_API_TOKEN=<token-gateway>
-APAR_WA_TO=628xxxxxxxxxx
 APAR_EMAIL_TO=k3@perusahaan.example
-SMTP_HOST=smtp.perusahaan.example
+SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USER=k3@perusahaan.example
-SMTP_PASSWORD=<password-smtp>
-SMTP_FROM=k3@perusahaan.example
+SMTP_USER=<alamat-gmail-pengirim>
+SMTP_PASSWORD=<google-app-password>
+SMTP_FROM=<alamat-gmail-pengirim>
 ```
 
-Gunakan alamat perusahaan atau mailing list di `APAR_EMAIL_TO`. Port 587 memakai
-STARTTLS wajib; port 465 memakai TLS langsung. Jangan menonaktifkan validasi
-sertifikat. `picNomorWa` pada aset mengalahkan nomor fallback `APAR_WA_TO`.
-Semua variabel diteruskan ke container melalui Docker Compose.
+Gunakan alamat Gmail atau mailing list di `APAR_EMAIL_TO`. Untuk Gmail, buat
+Google App Password dan gunakan sebagai `SMTP_PASSWORD`; jangan memakai password
+login Gmail. Port 587 memakai STARTTLS wajib; port 465 memakai TLS langsung.
+Jangan menonaktifkan validasi sertifikat. Semua variabel diteruskan ke container
+melalui Docker Compose.
 
 ## Menambahkan data
 
@@ -47,7 +45,6 @@ await prisma.apar.create({
     lokasi: 'Lantai 1 - Lobby',
     tanggalExpired: new Date('2026-12-31T00:00:00Z'),
     status: 'ACTIVE',
-    picNomorWa: '628xxxxxxxxxx', // opsional; fallback ke APAR_WA_TO
   },
 })
 ```
@@ -72,10 +69,11 @@ CRON_SECRET=<secret-yang-sama-dengan-env-aplikasi>
 
 - Mulai dua **bulan kalender** sebelum expired: satu log `WEB_WARNING`.
   Tanggal yang tidak tersedia dijepit ke akhir bulan; 30 April mulai 28/29 Februari.
-- Pada dan setelah tanggal expired: kirim WA dan email, catat `WA_EXPIRED` dan
-  `EMAIL_EXPIRED` hanya jika gateway/SMTP menerima pengiriman.
-- Kegagalan satu kanal tidak menghalangi kanal lain; HTTP 503 menandakan ada
-  kegagalan yang dapat dicoba ulang. Log sukses tidak dikirim ulang pada cron berikutnya.
+- Pada dan setelah tanggal expired: kirim email ke `APAR_EMAIL_TO`, catat
+  `EMAIL_EXPIRED` hanya jika SMTP menerima pengiriman. WhatsApp tidak digunakan
+  untuk peringatan APAR.
+- Kegagalan email menghasilkan HTTP 503 agar dapat dicoba ulang. Log sukses
+  tidak dikirim ulang pada cron berikutnya.
 - Hanya aset `ACTIVE` diproses. Setelah refill, perbarui `tanggalExpired` dan
   kembalikan `status` ke `ACTIVE`; siklus notifikasi baru mengikuti tanggal baru.
 - Tanggal hari ini ditentukan dalam `Asia/Jakarta`, termasuk saat server UTC.
